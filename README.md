@@ -20,6 +20,18 @@
 - **Offline Resilience**: Graceful error handling and retry mechanisms.
 
 ---
+## 🎥 Demo & Highlights
+
+### Application Walkthrough
+> [Click here to watch the full video demo](YOUR_DRIVE_LINK_HERE)
+
+### 📸 Screenshots
+| **Home Screen** | **College Details** | **Subject Roadmap** |
+|:---:|:---:|:---:|
+| ![Home](LINK_TO_HOME_SCREENSHOT) | ![College](LINK_TO_COLLEGE_SCREENSHOT) | ![Roadmap](LINK_TO_ROADMAP_SCREENSHOT) |
+
+---
+
 
 ## 🛠️ Technology Stack
 
