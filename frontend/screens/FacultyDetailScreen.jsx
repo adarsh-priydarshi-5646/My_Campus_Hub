@@ -3,20 +3,26 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Image,
   TouchableOpacity,
   Linking,
   Alert,
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fetchTeacherById } from '../services/api';
-import { globalStyles, colors, typography, spacing, } from '../styles/globalStyles';
+import { colors, spacing, typography } from '../styles/globalStyles';
 import BackButton from '../components/BackButton';
-import ErrorMessage from '../components/ErrorMessage';
-import LoadingSpinner from '../components/LoadingSpinner';
+import AnimatedBackground from '../components/AnimatedBackground';
+import { normalize, rs } from '../utils/responsive';
+
+const { width } = Dimensions.get('window');
 
 const FacultyDetailScreen = ({ route, navigation }) => {
   const { teacherId } = route.params;
@@ -32,7 +38,7 @@ const FacultyDetailScreen = ({ route, navigation }) => {
       setTeacher(res.data);
     } catch (err) {
       console.error('Error loading teacher details:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load teacher details. Please try again.');
+      setError(err.response?.data?.error || err.message || 'Failed to load details');
     } finally {
       setLoading(false);
     }
@@ -44,282 +50,414 @@ const FacultyDetailScreen = ({ route, navigation }) => {
 
   const handleLinkedInPress = () => {
     if (teacher?.linkedin) {
-      Linking.openURL(teacher.linkedin).catch(() => {
-        Alert.alert('Error', 'Could not open LinkedIn profile');
-      });
+      Linking.openURL(teacher.linkedin).catch(() => Alert.alert('Error', 'Could not open LinkedIn'));
     }
   };
 
   const handleEmailPress = () => {
-    if (teacher?.contact) {
-      Linking.openURL(`mailto:${teacher.contact}`).catch(() => {
-        Alert.alert('Error', 'Could not open email client');
-      });
+    if (teacher?.email || teacher?.contact) {
+      Linking.openURL(`mailto:${teacher.email || teacher.contact}`).catch(() => Alert.alert('Error', 'Could not open email client'));
     }
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading teacher details..." />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} onRetry={loadTeacherDetails} />;
-  }
-
-  if (!teacher) {
     return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <View style={globalStyles.errorContainer}>
-          <FontAwesome5 name="chalkboard-teacher" size={64} color={colors.text.secondary} style={{marginBottom: spacing.lg}} />
-          <Text style={globalStyles.errorTitle}>Teacher Not Found</Text>
-          <Text style={globalStyles.errorMessage}>
-            The requested teacher information is not available.
-          </Text>
-          <BackButton onPress={() => navigation.goBack()} title="Back" />
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <AnimatedBackground variant="gradient">
+          <SafeAreaView style={styles.center}>
+             <ActivityIndicator size="large" color={colors.primary} />
+             <Text style={styles.loadingText}>Loading Profile...</Text>
+          </SafeAreaView>
+        </AnimatedBackground>
+      </View>
     );
   }
 
-  return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
-        style={globalStyles.container}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.container}>
-          <BackButton onPress={() => navigation.goBack()} title="Back to Faculty" />
-          
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: teacher.image || 'https://via.placeholder.com/150' }}
-                style={styles.profileImage}
-                defaultSource={require('../assets/icon.png')}
-              />
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.teacherName}>{teacher.name}</Text>
-              <Text style={styles.designation}>{teacher.designation}</Text>
-              <Text style={styles.department}>{teacher.department}</Text>
-            </View>
-          </View>
+  if (error || !teacher) {
+    return (
+      <View style={styles.mainContainer}>
+        <AnimatedBackground variant="gradient">
+          <SafeAreaView style={styles.center}>
+            <Ionicons name="alert-circle" size={60} color="#f87171" />
+            <Text style={styles.errorText}>{error || "Faculty not found"}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.retryText}>Go Back</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+        </AnimatedBackground>
+      </View>
+    );
+  }
 
-          {/* Contact Actions */}
-          <View style={styles.contactActions}>
-            {teacher.linkedin && (
-              <TouchableOpacity
-                style={[styles.contactButton, styles.linkedinButton]}
-                onPress={handleLinkedInPress}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="logo-linkedin" size={20} color={colors.text.white} style={{marginRight: 8}} />
-                <Text style={styles.contactText}>LinkedIn</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Bio Section */}
-          {teacher.bio && (
-            <View style={globalStyles.card}>
-              <Text style={styles.sectionTitle}>About</Text>
-              <Text style={styles.bioText}>{teacher.bio}</Text>
-            </View>
-          )}
-
-          {/* Experience Section */}
-          {teacher.experience && (
-            <View style={globalStyles.card}>
-              <Text style={styles.sectionTitle}>Experience</Text>
-              <View style={styles.detailRow}>
-                <FontAwesome5 name="briefcase" size={18} color={colors.primary} style={{marginRight: 12, width: 20}} />
-                <Text style={styles.detailText}>{teacher.experience}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Education Section */}
-          {teacher.education && (
-            <View style={globalStyles.card}>
-              <Text style={styles.sectionTitle}>Education</Text>
-              <View style={styles.detailRow}>
-                <Ionicons name="school" size={20} color={colors.primary} style={{marginRight: 12, width: 20}} />
-                <Text style={styles.detailText}>{teacher.education}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Contact Information */}
-          <View style={globalStyles.card}>
-            <Text style={styles.sectionTitle}>Contact Information</Text>
-            <View style={styles.detailRow}>
-              <MaterialIcons name="business" size={20} color={colors.primary} style={{marginRight: 12, width: 20}} />
-              <Text style={styles.detailText}>{teacher.department}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <FontAwesome5 name="user-tie" size={18} color={colors.primary} style={{marginRight: 12, width: 20}} />
-              <Text style={styles.detailText}>{teacher.designation}</Text>
-            </View>
-          </View>
-
-          {/* Subjects Taught */}
-          <View style={globalStyles.card}>
-            <Text style={styles.sectionTitle}>Subjects Taught</Text>
-            {teacher.subjects && teacher.subjects.length > 0 ? (
-              teacher.subjects.map((subject, index) => (
-                <View key={index} style={styles.subjectItem}>
-                  <Text style={styles.subjectName}>{subject.name}</Text>
-                  <Text style={styles.subjectDetails}>
-                    {subject.totalLectures} lectures • {subject.totalLabs} labs • {subject.credits} credits
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noSubjectsText}>No subjects assigned yet</Text>
-            )}
-          </View>
-
-          {/* Lab Subjects */}
-          {teacher.labSubjects && teacher.labSubjects.length > 0 && (
-            <View style={globalStyles.card}>
-              <Text style={styles.sectionTitle}>Lab Subjects</Text>
-              {teacher.labSubjects.map((subject, index) => (
-                <View key={index} style={styles.subjectItem}>
-                  <Text style={styles.subjectName}>{subject.name}</Text>
-                  <Text style={styles.subjectDetails}>
-                    {subject.totalLectures} lectures • {subject.totalLabs} labs • {subject.credits} credits
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
+  const renderSection = (title, icon, content) => (
+    <BlurView intensity={20} tint="dark" style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionIconBox}>
+          {icon}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      <Text style={styles.sectionContent}>{content}</Text>
+    </BlurView>
+  );
+
+  return (
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.headerTitle}>Profile Details</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Profile Header */}
+            <View style={styles.profileHero}>
+              <View style={styles.imageCard}>
+                <Image
+                  source={{ uri: teacher.image || 'https://via.placeholder.com/300' }}
+                  style={styles.profileImg}
+                />
+                <LinearGradient
+                   colors={['transparent', 'rgba(15, 23, 42, 0.8)']}
+                   style={styles.imgOverlay}
+                />
+              </View>
+              
+              <Text style={styles.teacherName}>{teacher.name}</Text>
+              <Text style={styles.teacherDesignation}>{teacher.designation}</Text>
+              <Text style={styles.teacherDept}>{teacher.department}</Text>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.actionBtn} onPress={handleEmailPress}>
+                  <LinearGradient colors={[colors.primary, '#6366f1']} style={styles.actionGradient}>
+                    <Ionicons name="mail" size={20} color="#fff" />
+                    <Text style={styles.actionText}>Email</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {teacher.linkedin && (
+                  <TouchableOpacity style={styles.actionBtn} onPress={handleLinkedInPress}>
+                    <BlurView intensity={30} tint="dark" style={styles.linkedinBlur}>
+                      <Ionicons name="logo-linkedin" size={20} color="#60a5fa" />
+                      <Text style={[styles.actionText, { color: '#60a5fa' }]}>LinkedIn</Text>
+                    </BlurView>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Info Sections */}
+            <View style={styles.infoContainer}>
+              {teacher.bio && renderSection('About', <Ionicons name="information-circle" size={20} color="#fbbf24" />, teacher.bio)}
+              
+              <View style={styles.statsRow}>
+                 <BlurView intensity={20} tint="dark" style={styles.statCard}>
+                    <Text style={styles.statVal}>{teacher.experience || "10+"}</Text>
+                    <Text style={styles.statLbl}>Exp. Years</Text>
+                 </BlurView>
+                 <BlurView intensity={20} tint="dark" style={styles.statCard}>
+                    <Text style={styles.statVal}>{teacher.subjects?.length || "0"}</Text>
+                    <Text style={styles.statLbl}>Subjects</Text>
+                 </BlurView>
+              </View>
+
+              {teacher.education && renderSection('Education', <Ionicons name="school" size={20} color="#a78bfa" />, teacher.education)}
+              
+              {/* Subjects List */}
+              <Text style={styles.listHeading}>Teaching Portfolio</Text>
+              {teacher.subjects && teacher.subjects.length > 0 ? (
+                teacher.subjects.map((sub, idx) => (
+                  <BlurView key={idx} intensity={15} tint="dark" style={styles.subjectCard}>
+                    <View style={styles.subIcon}>
+                      <MaterialCommunityIcons name="book-open-variant" size={20} color={colors.primaryLight} />
+                    </View>
+                    <View style={styles.subInfo}>
+                      <Text style={styles.subName}>{sub.name}</Text>
+                      <Text style={styles.subStats}>
+                        {sub.totalLectures} Lectures • {sub.credits} Credits
+                      </Text>
+                    </View>
+                  </BlurView>
+                ))
+              ) : (
+                <Text style={styles.noData}>No active subjects assigned.</Text>
+              )}
+            </View>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
+  },
+  headerTitle: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
   scrollContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: rs(40),
   },
-  container: {
-    padding: spacing.lg,
-  },
-  profileHeader: {
+  profileHero: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    paddingTop: rs(25),
+    marginBottom: rs(35),
   },
-  imageContainer: {
-    marginBottom: spacing.lg,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  imageCard: {
+    width: rs(160),
+    height: rs(160),
+    borderRadius: rs(80),
     borderWidth: 4,
-    borderColor: colors.primary,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    marginBottom: rs(25),
+    elevation: 20,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
   },
-  profileInfo: {
-    alignItems: 'center',
+  profileImg: {
+    width: '100%',
+    height: '100%',
+  },
+  imgOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   teacherName: {
-    ...typography.h2,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
+    fontSize: normalize(28),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(6),
+    letterSpacing: -1,
   },
-  designation: {
-    ...typography.h4,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
+  teacherDesignation: {
+    fontSize: normalize(16),
+    fontWeight: '800',
+    color: colors.primaryLight,
+    marginBottom: rs(4),
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  department: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
+  teacherDept: {
+    fontSize: normalize(14),
+    color: colors.text.muted,
+    fontWeight: '700',
+    marginBottom: rs(30),
   },
-  contactActions: {
+  actionRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-    gap: spacing.md,
+    gap: rs(15),
   },
-  contactButton: {
+  actionBtn: {
+    borderRadius: rs(18),
+    overflow: 'hidden',
+    minWidth: rs(130),
+  },
+  actionGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 25,
-    minWidth: 120,
     justifyContent: 'center',
+    paddingVertical: rs(14),
+    gap: rs(10),
   },
-  linkedinButton: {
-    backgroundColor: '#0077B5',
+  linkedinBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: rs(14),
+    gap: rs(10),
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  contactIcon: {
-    fontSize: 18,
-    marginRight: spacing.sm,
+  actionText: {
+    fontSize: normalize(14),
+    fontWeight: '900',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  contactText: {
-    ...typography.body,
-    color: colors.text.white,
-    fontWeight: '600',
+  infoContainer: {
+    paddingHorizontal: rs(20),
+  },
+  sectionCard: {
+    borderRadius: rs(28),
+    padding: rs(22),
+    marginBottom: rs(18),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: rs(15),
+  },
+  sectionIconBox: {
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: rs(15),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   sectionTitle: {
-    ...typography.h4,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
+    fontSize: normalize(17),
+    fontWeight: '800',
+    color: colors.text.white,
+    letterSpacing: -0.3,
   },
-  bioText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    lineHeight: 24,
+  sectionContent: {
+    fontSize: normalize(15),
+    color: colors.text.muted,
+    lineHeight: normalize(24),
+    fontWeight: '500',
   },
-  detailRow: {
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
+    justifyContent: 'space-between',
+    marginBottom: rs(18),
   },
-  detailIcon: {
-    fontSize: 18,
-    marginRight: spacing.sm,
-    marginTop: 2,
+  statCard: {
+    width: '48%',
+    borderRadius: rs(24),
+    padding: rs(20),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  detailText: {
-    ...typography.body,
-    color: colors.text.secondary,
+  statVal: {
+    fontSize: normalize(24),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(5),
+  },
+  statLbl: {
+    fontSize: normalize(12),
+    color: colors.text.muted,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  listHeading: {
+    fontSize: normalize(20),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginTop: rs(15),
+    marginBottom: rs(20),
+    letterSpacing: -0.5,
+  },
+  subjectCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: rs(18),
+    borderRadius: rs(24),
+    marginBottom: rs(14),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  subIcon: {
+    width: rs(50),
+    height: rs(50),
+    borderRadius: rs(16),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: rs(18),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  subInfo: {
     flex: 1,
-    lineHeight: 22,
   },
-  subjectItem: {
-    backgroundColor: colors.primaryLight,
-    padding: spacing.md,
-    borderRadius: 8,
-    marginBottom: spacing.sm,
+  subName: {
+    fontSize: normalize(16),
+    fontWeight: '800',
+    color: colors.text.white,
+    marginBottom: rs(4),
+    letterSpacing: -0.3,
   },
-  subjectName: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+  subStats: {
+    fontSize: normalize(13),
+    color: colors.text.muted,
+    fontWeight: '700',
   },
-  subjectDetails: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  noSubjectsText: {
-    ...typography.body,
-    color: colors.text.light,
-    fontStyle: 'italic',
+  noData: {
     textAlign: 'center',
-    paddingVertical: spacing.md,
+    color: colors.text.muted,
+    marginTop: rs(10),
+    fontStyle: 'italic',
+    fontSize: normalize(14),
   },
+  loadingText: {
+    marginTop: rs(20),
+    color: colors.text.muted,
+    fontWeight: '800',
+    fontSize: normalize(15),
+    letterSpacing: 0.5,
+  },
+  errorText: {
+    fontSize: normalize(16),
+    color: colors.danger,
+    fontWeight: '800',
+    marginTop: rs(20),
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: rs(25),
+    paddingHorizontal: rs(25),
+    paddingVertical: rs(12),
+    backgroundColor: colors.primary,
+    borderRadius: rs(14),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: normalize(14),
+    textTransform: 'uppercase',
+  }
 });
 
 export default FacultyDetailScreen;

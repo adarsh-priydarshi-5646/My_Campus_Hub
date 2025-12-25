@@ -3,574 +3,369 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  Alert
+  Alert,
+  Image,
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCollegeDetails } from '../services/api';
-import { globalStyles, colors, typography, spacing,isSmallScreen } from '../styles/globalStyles';
-import { normalize, rs } from '../utils/responsive';
+import { globalStyles, colors, spacing, typography } from '../styles/globalStyles';
 import BackButton from '../components/BackButton';
-import LoadingSpinner from '../components/LoadingSpinner';
+import AnimatedBackground from '../components/AnimatedBackground';
+import { normalize, rs } from '../utils/responsive';
+
+const { width } = Dimensions.get('window');
 
 const CollegeDetailsScreen = ({ navigation }) => {
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Newton School of Technology Details
-  const newtonDetails = {
-    name: "Newton School of Technology",
-    tagline: "Empowering Future Innovators",
-    established: "2010",
-    location: "Bhubaneswar, Odisha",
-    affiliation: "Biju Patnaik University of Technology (BPUT)",
-    accreditation: "NAAC A+ Grade",
-    
-    about: "Newton School of Technology is a premier engineering institution dedicated to providing world-class technical education. With state-of-the-art infrastructure and experienced faculty, we nurture innovation, creativity, and excellence in our students. Our focus on practical learning, industry partnerships, and holistic development ensures that our graduates are industry-ready and globally competitive.",
-    
-    vision: "To be a globally recognized center of excellence in technical education, fostering innovation, research, and entrepreneurship.",
-    
-    mission: [
-      "Provide quality education with emphasis on practical learning",
-      "Foster research and innovation in emerging technologies",
-      "Develop industry-ready professionals with strong ethical values",
-      "Promote entrepreneurship and leadership skills"
-    ],
-    
-    departments: [
-      { name: "Computer Science & Engineering", icon: "laptop", students: 240 },
-      { name: "Electronics & Communication", icon: "hardware-chip", students: 180 },
-      { name: "Mechanical Engineering", icon: "construct", students: 120 },
-      { name: "Civil Engineering", icon: "business", students: 90 },
-      { name: "Electrical Engineering", icon: "flash", students: 120 }
-    ],
-    
-    facilities: [
-      { name: "Modern Laboratories", icon: "flask", description: "Well-equipped labs with latest equipment" },
-      { name: "Digital Library", icon: "library", description: "10,000+ books and e-resources" },
-      { name: "Smart Classrooms", icon: "desktop", description: "AC classrooms with projectors" },
-      { name: "Sports Complex", icon: "football", description: "Indoor & outdoor sports facilities" },
-      { name: "Hostel", icon: "bed", description: "Separate hostels for boys and girls" },
-      { name: "Cafeteria", icon: "restaurant", description: "Hygienic food at affordable prices" },
-      { name: "Wi-Fi Campus", icon: "wifi", description: "24x7 high-speed internet" },
-      { name: "Placement Cell", icon: "briefcase", description: "Dedicated placement support" }
-    ],
-    
-    achievements: [
-      "95% Placement Record",
-      "Top 50 Engineering Colleges in Eastern India",
-      "Research Publications in International Journals",
-      "Winner of Multiple Hackathons & Competitions"
-    ],
-    
-    contact: {
-      phone: "+91-674-XXXX-XXX",
-      email: "info@newtontech.edu.in",
-      website: "www.newtontech.edu.in",
-      address: "Plot No. 123, Chandrasekharpur, Bhubaneswar, Odisha - 751016"
-    }
-  };
-
-  const loadCollegeDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetchCollegeDetails();
-      setCollege(res.data || newtonDetails);
-    } catch (err) {
-      if (__DEV__) console.error('Error loading college details:', err);
-      // Use Newton details as fallback
-      setCollege(newtonDetails);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhonePress = () => {
-    Linking.openURL(`tel:${newtonDetails.contact.phone}`).catch(() => {
-      Alert.alert('Error', 'Could not open phone dialer');
-    });
-  };
-
-  const handleEmailPress = () => {
-    Linking.openURL(`mailto:${newtonDetails.contact.email}`).catch(() => {
-      Alert.alert('Error', 'Could not open email client');
-    });
-  };
-
-  const handleWebsitePress = () => {
-    Linking.openURL(`https://${newtonDetails.contact.website}`).catch(() => {
-      Alert.alert('Error', 'Could not open website');
-    });
-  };
-
   useEffect(() => {
-    loadCollegeDetails();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetchCollegeDetails();
+        
+        let data = res.data;
+        // Parse JSON fields if they are strings
+        if (typeof data.stats === 'string') data.stats = JSON.parse(data.stats);
+        if (typeof data.facilities === 'string') data.facilities = JSON.parse(data.facilities);
+        if (typeof data.contactInfo === 'string') data.contactInfo = JSON.parse(data.contactInfo);
+        
+        setCollege(data);
+      } catch (err) {
+        setError('Failed to load institute profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
+  const handleLink = (type, val) => {
+    if (!val) return;
+    const url = type === 'tel' ? `tel:${val}` : type === 'url' ? (val.startsWith('http') ? val : `https://${val}`) : `mailto:${val}`;
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open link'));
+  };
+
   if (loading) {
-    return <LoadingSpinner message="Loading college details..." />;
+    return (
+      <View style={globalStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
-        style={globalStyles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <BackButton onPress={() => navigation.goBack()} title="Back to Home" />
-        
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <FontAwesome5 name="university" size={40} color={colors.primary} />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.headerTitle}>Institute Profile</Text>
+            <View style={{ width: rs(40) }} />
           </View>
-          <Text style={styles.title}>{newtonDetails.name}</Text>
-          <Text style={styles.tagline}>{newtonDetails.tagline}</Text>
-          <View style={styles.badgeContainer}>
-            <View style={styles.badge}>
-              <Ionicons name="star" size={14} color={colors.primary} style={{marginRight: 4}} />
-              <Text style={styles.badgeText}>{newtonDetails.accreditation}</Text>
+
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Hero Section */}
+            <View style={styles.heroSection}>
+               <View style={styles.logoBox}>
+                  <MaterialCommunityIcons name="school" size={rs(40)} color={colors.primaryLight} />
+               </View>
+               <Text style={styles.collegeName}>{college?.name}</Text>
+               <Text style={styles.tagline}>{college?.tagline}</Text>
+               
+               <View style={styles.locRow}>
+                  <Ionicons name="location" size={rs(14)} color={colors.text.secondary} />
+                  <Text style={styles.locText}>{college?.location}</Text>
+               </View>
             </View>
-            <View style={styles.badge}>
-              <Ionicons name="school" size={14} color={colors.primary} style={{marginRight: 4}} />
-              <Text style={styles.badgeText}>BPUT Affiliated</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Ionicons name="people" size={32} color={colors.primary} />
-            <Text style={styles.statNumber}>750+</Text>
-            <Text style={styles.statLabel}>Students</Text>
-          </View>
-          <View style={styles.statItem}>
-            <FontAwesome5 name="chalkboard-teacher" size={28} color={colors.success} />
-            <Text style={styles.statNumber}>50+</Text>
-            <Text style={styles.statLabel}>Faculty</Text>
-          </View>
-          <View style={styles.statItem}>
-            <MaterialIcons name="business-center" size={32} color={colors.warning} />
-            <Text style={styles.statNumber}>95%</Text>
-            <Text style={styles.statLabel}>Placement</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="trophy" size={32} color={colors.error} />
-            <Text style={styles.statNumber}>15+</Text>
-            <Text style={styles.statLabel}>Years</Text>
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="information-circle" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>About Us</Text>
-          </View>
-          <Text style={styles.description}>{newtonDetails.about}</Text>
-        </View>
-
-        {/* Vision & Mission */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="eye" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Our Vision</Text>
-          </View>
-          <Text style={styles.description}>{newtonDetails.vision}</Text>
-          
-          <View style={[styles.cardHeader, {marginTop: spacing.lg}]}>
-            <Ionicons name="flag" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Our Mission</Text>
-          </View>
-          {newtonDetails.mission.map((item, index) => (
-            <View key={index} style={styles.missionItem}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-              <Text style={styles.missionText}>{item}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Departments */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="school" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Departments</Text>
-          </View>
-          {newtonDetails.departments.map((dept, index) => (
-            <View key={index} style={styles.deptItem}>
-              <View style={styles.deptIconContainer}>
-                <Ionicons name={dept.icon} size={24} color={colors.primary} />
+            {/* Stats Row */}
+            {college?.stats && (
+              <View style={styles.statsRow}>
+                {college.stats.map((s, i) => (
+                  <BlurView key={i} intensity={30} tint="dark" style={styles.statCard}>
+                      <MaterialCommunityIcons name={s.icon} size={rs(22)} color={colors.primaryLight} />
+                      <Text style={styles.statVal}>{s.value}</Text>
+                      <Text style={styles.statLbl}>{s.label}</Text>
+                  </BlurView>
+                ))}
               </View>
-              <View style={styles.deptContent}>
-                <Text style={styles.deptName}>{dept.name}</Text>
-                <Text style={styles.deptStudents}>{dept.students} Students</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+            )}
 
-        {/* Facilities */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="apartment" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Facilities & Infrastructure</Text>
-          </View>
-          <View style={styles.facilitiesGrid}>
-            {newtonDetails.facilities.map((facility, index) => (
-              <View key={index} style={styles.facilityItem}>
-                <View style={styles.facilityIconContainer}>
-                  <Ionicons name={facility.icon} size={24} color={colors.primary} />
+            {/* About Section */}
+            <BlurView intensity={25} tint="dark" style={styles.sectionCard}>
+               <View style={styles.sectionHeader}>
+                  <Ionicons name="information-circle" size={rs(20)} color={colors.primaryLight} />
+                  <Text style={styles.sectionTitle}>About Institution</Text>
+               </View>
+               <Text style={styles.sectionBody}>{college?.about}</Text>
+            </BlurView>
+
+            {/* Facilities */}
+            {college?.facilities && (
+              <>
+                <Text style={styles.subheading}>World-Class Facilities</Text>
+                <View style={styles.facilityGrid}>
+                  {college.facilities.map((f, i) => (
+                    <BlurView key={i} intensity={20} tint="dark" style={styles.facilityCard}>
+                        <MaterialCommunityIcons name={f.icon} size={rs(28)} color={colors.primaryLight} />
+                        <Text style={styles.facilityName}>{f.name}</Text>
+                    </BlurView>
+                  ))}
                 </View>
-                <Text style={styles.facilityName}>{facility.name}</Text>
-                <Text style={styles.facilityDesc}>{facility.description}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+              </>
+            )}
 
-        {/* Achievements */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="trophy" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Achievements & Recognition</Text>
-          </View>
-          {newtonDetails.achievements.map((achievement, index) => (
-            <View key={index} style={styles.achievementItem}>
-              <Ionicons name="star" size={18} color={colors.warning} />
-              <Text style={styles.achievementText}>{achievement}</Text>
-            </View>
-          ))}
-        </View>
+            {/* Contact Grid */}
+            {college?.contactInfo && (
+              <>
+                <Text style={styles.subheading}>Get in Touch</Text>
+                <View style={styles.contactSection}>
+                  <TouchableOpacity 
+                      style={styles.contactBtn} 
+                      onPress={() => handleLink('tel', college.contactInfo.phone)}
+                  >
+                      <BlurView intensity={40} tint="dark" style={styles.contactBlur}>
+                        <Ionicons name="call" size={rs(20)} color={colors.success} />
+                        <Text style={styles.contactTxt}>Call Us</Text>
+                      </BlurView>
+                  </TouchableOpacity>
 
-        {/* Contact Information */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="call" size={24} color={colors.primary} />
-            <Text style={styles.cardTitle}>Contact Us</Text>
-          </View>
-          
-          <TouchableOpacity style={styles.contactItem} onPress={handlePhonePress}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="call" size={20} color={colors.text.white} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactLabel}>Phone</Text>
-              <Text style={styles.contactValue}>{newtonDetails.contact.phone}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-          </TouchableOpacity>
+                  <TouchableOpacity 
+                      style={styles.contactBtn} 
+                      onPress={() => handleLink('mail', college.contactInfo.email)}
+                  >
+                      <BlurView intensity={40} tint="dark" style={styles.contactBlur}>
+                        <Ionicons name="mail" size={rs(20)} color={colors.primaryLight} />
+                        <Text style={[styles.contactTxt, { color: colors.primaryLight }]}>Email</Text>
+                      </BlurView>
+                  </TouchableOpacity>
 
-          <TouchableOpacity style={styles.contactItem} onPress={handleEmailPress}>
-            <View style={styles.contactIconContainer}>
-              <MaterialIcons name="email" size={20} color={colors.text.white} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>{newtonDetails.contact.email}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-          </TouchableOpacity>
+                  <TouchableOpacity 
+                      style={styles.contactBtn} 
+                      onPress={() => handleLink('url', college.contactInfo.website)}
+                  >
+                      <BlurView intensity={40} tint="dark" style={styles.contactBlur}>
+                        <Ionicons name="globe" size={rs(20)} color={colors.secondary} />
+                        <Text style={[styles.contactTxt, { color: colors.secondary }]}>Website</Text>
+                      </BlurView>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
 
-          <TouchableOpacity style={styles.contactItem} onPress={handleWebsitePress}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="globe" size={20} color={colors.text.white} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactLabel}>Website</Text>
-              <Text style={styles.contactValue}>{newtonDetails.contact.website}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-          </TouchableOpacity>
-
-          <View style={styles.contactItem}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="location" size={20} color={colors.text.white} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactLabel}>Address</Text>
-              <Text style={styles.contactValue}>{newtonDetails.contact.address}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Established in {newtonDetails.established}</Text>
-          <Text style={styles.footerSubtext}>{newtonDetails.location}</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            <View style={{ height: rs(60) }} />
+          </ScrollView>
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: spacing.xxl,
-    padding: spacing.md,
+  mainContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  header: {
-    marginBottom: spacing.xl,
+  safeArea: {
+    flex: 1,
+  },
+  topNav: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    padding: spacing.xl,
-    borderRadius: 24,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
   },
-  logoContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: colors.text.white,
+  headerTitle: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
+  scrollContent: {
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
+    paddingBottom: rs(40),
+  },
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: rs(40),
+    marginBottom: rs(20),
+  },
+  logoBox: {
+    width: rs(110),
+    height: rs(110),
+    borderRadius: rs(35),
+    backgroundColor: 'rgba(99,102,241,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: rs(25),
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.15)',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
   },
-  title: {
-    ...typography.h1,
+  collegeName: {
+    fontSize: normalize(28),
+    fontWeight: '900',
     color: colors.text.white,
     textAlign: 'center',
-    marginBottom: spacing.xs,
-    fontWeight: '800',
+    marginBottom: rs(10),
+    letterSpacing: -1,
   },
   tagline: {
-    ...typography.body,
+    fontSize: normalize(16),
     color: colors.primaryLight,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-    fontWeight: '600',
-    fontStyle: 'italic',
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.text.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-  },
-  badgeText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    ...typography.h2,
-    color: colors.primary,
     fontWeight: '800',
-    marginTop: spacing.xs,
-    marginBottom: 2,
-  },
-  statLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
     textAlign: 'center',
+    marginBottom: rs(15),
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardHeader: {
+  locRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    gap: spacing.sm,
+    gap: rs(8),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: rs(14),
+    paddingVertical: rs(8),
+    borderRadius: rs(12),
   },
-  cardTitle: {
-    ...typography.h3,
-    color: colors.primary,
+  locText: {
+    fontSize: normalize(13),
+    color: colors.text.muted,
     fontWeight: '700',
   },
-  description: {
-    ...typography.body,
-    color: colors.text.primary,
-    lineHeight: 24,
-    textAlign: 'justify',
-  },
-  missionItem: {
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    marginBottom: rs(35),
+    gap: rs(10),
   },
-  missionText: {
-    ...typography.body,
-    color: colors.text.primary,
+  statCard: {
     flex: 1,
-    lineHeight: 22,
+    borderRadius: rs(28),
+    paddingVertical: rs(12),
+    paddingHorizontal: rs(5),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  deptItem: {
+  statVal: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginTop: rs(10),
+    marginBottom: rs(4),
+  },
+  statLbl: {
+    fontSize: normalize(10),
+    color: colors.text.muted,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionCard: {
+    borderRadius: rs(32),
+    padding: rs(25),
+    marginBottom: rs(35),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    gap: rs(12),
+    marginBottom: rs(18),
   },
-  deptIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
+  sectionTitle: {
+    fontSize: normalize(18),
+    fontWeight: '800',
+    color: colors.text.white,
+    letterSpacing: -0.3,
   },
-  deptContent: {
-    flex: 1,
+  sectionBody: {
+    fontSize: normalize(15),
+    color: colors.text.muted,
+    lineHeight: normalize(24),
+    fontWeight: '500',
   },
-  deptName: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    marginBottom: 2,
+  subheading: {
+    fontSize: normalize(22),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(20),
+    letterSpacing: -0.5,
   },
-  deptStudents: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  facilitiesGrid: {
-    width: '100%',
+  facilityGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: rs(14),
+    marginBottom: rs(35),
   },
-  facilityItem: {
-    width: isSmallScreen ? '48%' : '48.5%',
-    backgroundColor: colors.background,
-    borderRadius: normalize(16),
-    padding: rs(spacing.md),
+  facilityCard: {
+    width: '48%',
+    borderRadius: rs(28),
+    padding: rs(20),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: rs(spacing.md),
-  },
-  facilityIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
   facilityName: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing.xs,
+    fontSize: normalize(15),
+    fontWeight: '800',
+    color: colors.text.white,
+    marginTop: rs(15),
+    letterSpacing: -0.2,
   },
-  facilityDesc: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    fontSize: 11,
-  },
-  achievementItem: {
+  contactSection: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
+    gap: rs(12),
   },
-  achievementText: {
-    ...typography.body,
-    color: colors.text.primary,
+  contactBtn: {
     flex: 1,
-    lineHeight: 22,
+    borderRadius: rs(22),
+    overflow: 'hidden',
   },
-  contactItem: {
-    flexDirection: 'row',
+  contactBlur: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  contactIconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: colors.primary,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
+    paddingVertical: rs(20),
+    gap: rs(8),
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  contactContent: {
-    flex: 1,
-  },
-  contactLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  contactValue: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '500',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  footerText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontWeight: '600',
-  },
-  footerSubtext: {
-    ...typography.bodySmall,
-    color: colors.text.light,
-    marginTop: spacing.xs,
-  },
+  contactTxt: {
+    fontSize: normalize(12),
+    fontWeight: '900',
+    color: colors.success,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  }
 });
 
 export default CollegeDetailsScreen;

@@ -7,19 +7,22 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView, 
-  SafeAreaView,
   StatusBar,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { globalStyles, colors, typography, spacing, responsiveTypography, isSmallScreen } from '../styles/globalStyles';
 import { normalize, rs } from '../utils/responsive';
 import BackButton from '../components/BackButton';
-import Card3D from '../components/3DCard';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Toast from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
+
+const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -37,10 +40,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    // Reset errors
     setErrors({});
-    
-    // Validation
     const newErrors = {};
     if (!email) {
       newErrors.email = 'Email is required';
@@ -65,507 +65,340 @@ const LoginScreen = ({ navigation }) => {
     setLoading(false);
 
     if (result.success) {
-      setToast({ visible: true, message: 'Login successful! Welcome back!', type: 'success' });
+      setToast({ visible: true, message: 'Welcome back to MyCampusHub!', type: 'success' });
       setTimeout(() => navigation.replace('Home'), 1500);
     } else {
-      setToast({ visible: true, message: result.error || 'Unable to login. Please check your credentials.', type: 'error' });
+      setToast({ visible: true, message: result.error || 'Invalid credentials. Please try again.', type: 'error' });
     }
   };
 
-  
-
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <Toast 
-        visible={toast.visible} 
-        message={toast.message} 
-        type={toast.type}
-        onHide={() => setToast({ ...toast, visible: false })}
-      />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+        <Toast 
+          visible={toast.visible} 
+          message={toast.message} 
+          type={toast.type}
+          onHide={() => setToast({ ...toast, visible: false })}
+        />
+        
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={globalStyles.container}>
+          style={{ flex: 1 }}
+        >
           <ScrollView 
-            contentContainerStyle={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            centerContent={true}
           >
-            <View style={styles.backgroundContainer}>
-              <View style={[styles.container, styles.maxWidth]}>
-                <BackButton 
-                  onPress={() => navigation.navigate('Welcome')} 
-                  title="Back to Welcome"
-                />
-                
-                {/* Header Section */}
-                <View style={styles.headerSection}>
-                  <View style={styles.logoContainer}>
-                    <LinearGradient
-                      colors={[colors.primary, '#8b5cf6']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.logoGradient}
-                    >
-                      <Ionicons name="school" size={56} color={colors.text.white} />
-                    </LinearGradient>
-                  </View>
-                  <Text style={styles.title}>Welcome Back!</Text>
-                  <Text style={styles.subtitle}>Sign in to your MyCampusHub account</Text>
-                  <View style={styles.welcomeBadge}>
-                    <Ionicons name="sparkles" size={16} color={colors.primary} style={{marginRight: 6}} />
-                    <Text style={styles.badgeText}>Your Campus, Your Way</Text>
-                  </View>
-                  
-                  {/* Quick Info Pills */}
-                  <View style={styles.infoPills}>
-                    <View style={styles.infoPill}>
-                      <Ionicons name="shield-checkmark" size={14} color={colors.success} style={{marginRight: 4}} />
-                      <Text style={styles.infoPillText}>Secure</Text>
-                    </View>
-                    <View style={styles.infoPill}>
-                      <Ionicons name="flash" size={14} color={colors.warning} style={{marginRight: 4}} />
-                      <Text style={styles.infoPillText}>Fast</Text>
-                    </View>
-                    <View style={styles.infoPill}>
-                      <Ionicons name="heart" size={14} color={colors.error} style={{marginRight: 4}} />
-                      <Text style={styles.infoPillText}>Easy</Text>
-                    </View>
+            <View style={styles.topNav}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => navigation.navigate('Welcome')}
+              >
+                <Ionicons name="chevron-back" size={24} color={colors.text.white} />
+              </TouchableOpacity>
+              <Text style={styles.navTitle}>Sign In</Text>
+              <View style={{ width: 44 }} />
+            </View>
+
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <LinearGradient
+                  colors={[colors.primary, '#8b5cf6']}
+                  style={styles.logoGradient}
+                >
+                  <MaterialCommunityIcons name="school-outline" size={50} color={colors.text.white} />
+                </LinearGradient>
+              </View>
+              <Text style={styles.title}>MyCampusHub</Text>
+              <Text style={styles.subtitle}>Your Digital Campus companion</Text>
+            </View>
+
+            <BlurView intensity={Platform.OS === 'ios' ? 20 : 100} tint="dark" style={styles.glassCard}>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>University Email</Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedInput === 'email' && styles.inputFocused,
+                    errors.email && styles.inputError
+                  ]}>
+                    <Ionicons name="mail-outline" size={20} color={focusedInput === 'email' ? colors.primary : '#94a3b8'} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="name@university.edu"
+                      placeholderTextColor="#94a3b8"
+                      value={email}
+                      onChangeText={setEmail}
+                      onFocus={() => setFocusedInput('email')}
+                      onBlur={() => setFocusedInput(null)}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
                   </View>
                 </View>
 
-                {/* Login Card */}
-                <Card3D variant="primary" elevation="high" style={styles.card}>
-                  <View style={styles.formSection}>
-                    {/* Email */}
-                    <View style={styles.inputGroup}>
-                      <View style={styles.labelContainer}>
-                        <Ionicons name="mail" size={16} color={colors.text.secondary} style={{marginRight: 6}} />
-                        <Text style={styles.inputLabel}>Email Address</Text>
-                      </View>
-                      <View style={styles.inputContainer}>
-                        <Ionicons 
-                          name="mail" 
-                          size={20} 
-                          color={focusedInput === 'email' ? colors.primary : colors.text.light} 
-                          style={styles.inputIcon}
-                        />
-                        <TextInput 
-                          placeholder="Enter your email" 
-                          placeholderTextColor={colors.text.light}
-                          value={email} 
-                          onChangeText={(text) => {
-                            setEmail(text);
-                            if (errors.email) setErrors({...errors, email: null});
-                          }} 
-                          style={[
-                            styles.textInput,
-                            styles.textInputWithIcon,
-                            focusedInput === 'email' && styles.inputFocused,
-                            errors.email && styles.inputError
-                          ]}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          onFocus={() => setFocusedInput('email')}
-                          onBlur={() => setFocusedInput(null)}
-                          editable={!loading}
-                        />
-                      </View>
-                      {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-                    </View>
-                    
-                    {/* Password */}
-                    <View style={styles.inputGroup}>
-                      <View style={styles.labelContainer}>
-                        <Ionicons name="lock-closed" size={16} color={colors.text.secondary} style={{marginRight: 6}} />
-                        <Text style={styles.inputLabel}>Password</Text>
-                      </View>
-                      <View style={styles.inputContainer}>
-                        <Ionicons 
-                          name="lock-closed" 
-                          size={20} 
-                          color={focusedInput === 'password' ? colors.primary : colors.text.light} 
-                          style={styles.inputIcon}
-                        />
-                        <TextInput 
-                          placeholder="Enter your password" 
-                          placeholderTextColor={colors.text.light}
-                          value={password} 
-                          onChangeText={(text) => {
-                            setPassword(text);
-                            if (errors.password) setErrors({...errors, password: null});
-                          }} 
-                          secureTextEntry={!showPassword}
-                          style={[
-                            styles.textInput,
-                            styles.textInputWithIcon,
-                            focusedInput === 'password' && styles.inputFocused,
-                            errors.password && styles.inputError
-                          ]}
-                          autoCapitalize="none"
-                          onFocus={() => setFocusedInput('password')}
-                          onBlur={() => setFocusedInput(null)}
-                          editable={!loading}
-                          onSubmitEditing={handleLogin}
-                          returnKeyType="go"
-                        />
-                        <TouchableOpacity 
-                          onPress={() => setShowPassword(!showPassword)} 
-                          style={styles.eyeIcon}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Ionicons 
-                            name={showPassword ? "eye-off" : "eye"} 
-                            size={20} 
-                            color={colors.text.light} 
-                          />
-                        </TouchableOpacity>
-                      </View>
-                      {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                    </View>
-
-                    {/* Forgot Password */}
-                    <TouchableOpacity style={styles.forgotPassword}>
-                      <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                    
-                    {/* Sign In Button */}
-                    <TouchableOpacity 
-                      onPress={handleLogin} 
-                      style={[styles.loginButton, loading && styles.disabledButton]}
-                      activeOpacity={0.8}
-                      disabled={loading}
-                    >
-                      <Ionicons name={loading ? "reload" : "log-in"} size={20} color={colors.text.white} style={{marginRight: 8}} />
-                      <Text style={styles.loginButtonText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
-                    </TouchableOpacity>
-                    
-                    {/* Signup Link */}
-                    <TouchableOpacity 
-                      onPress={() => navigation.navigate('Signup')} 
-                      style={styles.signupLink}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.signupText}>
-                        Don't have an account? <Text style={styles.signupTextBold}>Sign Up</Text>
-                      </Text>
+                <View style={styles.inputGroup}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Password</Text>
+                    <TouchableOpacity>
+                      <Text style={styles.forgotText}>Forgot?</Text>
                     </TouchableOpacity>
                   </View>
-                </Card3D>
-
-                {/* Features Preview */}
-                <View style={styles.featuresPreview}>
-                  <Text style={styles.featuresTitle}>What you'll get with MyCampusHub</Text>
-                  <View style={styles.featuresList}>
-                    <View style={styles.featureItem}>
-                      <Ionicons name="book" size={20} color={colors.primary} style={{marginRight: 8}} />
-                      <Text style={styles.featureText}>Study Materials</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <FontAwesome5 name="chalkboard-teacher" size={18} color={colors.primary} style={{marginRight: 8}} />
-                      <Text style={styles.featureText}>Faculty Connect</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <MaterialIcons name="event" size={20} color={colors.primary} style={{marginRight: 8}} />
-                      <Text style={styles.featureText}>Event Updates</Text>
-                    </View>
-                    <View style={styles.featureItem}>
-                      <MaterialIcons name="restaurant-menu" size={20} color={colors.primary} style={{marginRight: 8}} />
-                      <Text style={styles.featureText}>Mess Menu</Text>
-                    </View>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedInput === 'password' && styles.inputFocused,
+                    errors.password && styles.inputError
+                  ]}>
+                    <Ionicons name="lock-closed-outline" size={20} color={focusedInput === 'password' ? colors.primary : '#94a3b8'} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="••••••••"
+                      placeholderTextColor="#94a3b8"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      onFocus={() => setFocusedInput('password')}
+                      onBlur={() => setFocusedInput(null)}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+                    </TouchableOpacity>
                   </View>
                 </View>
+
+                <TouchableOpacity 
+                  style={styles.primaryButton}
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  <LinearGradient
+                    colors={[colors.primary, '#6366f1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.buttonGradient}
+                  >
+                    <Text style={styles.buttonText}>{loading ? 'Authenticating...' : 'Sign In'}</Text>
+                    <Ionicons name="arrow-forward" size={20} color={colors.text.white} />
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.footer}>
+                  <Text style={styles.footerText}>New to MyCampusHub? </Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                    <Text style={styles.signUpLink}>Create Account</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BlurView>
+
+            <View style={styles.bottomFeatures}>
+              <View style={styles.featurePill}>
+                <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
+                <Text style={styles.featurePillText}>End-to-end Secure</Text>
               </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+        </SafeAreaView>
       </AnimatedBackground>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  maxWidth: {
-    width: '100%',
-    alignSelf: 'center',
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#0f172a',
   },
-  scrollContainer: {
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
     justifyContent: 'center',
-    minHeight: '100%',
   },
-  backgroundContainer: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: colors.background,
-    minHeight: '100%',
-  },
-  container: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    paddingHorizontal: rs(spacing.lg),
-    paddingVertical: rs(spacing.xl),
-    minHeight: '100%',
-  },
-  headerSection: {
-    width: '100%',
+  topNav: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: rs(spacing.xl),
+    justifyContent: 'space-between',
+    marginTop: 5,
+    marginBottom: 10,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  navTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.white,
+  },
+  header: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 25,
   },
   logoContainer: {
-    width: normalize(100),
-    height: normalize(100),
-    borderRadius: normalize(50),
-    marginBottom: rs(spacing.lg),
+    width: 70,
+    height: 70,
+    borderRadius: 24,
+    padding: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 15,
+    transform: [{ rotate: '45deg' }],
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-    overflow: 'hidden',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
   },
   logoGradient: {
     width: '100%',
     height: '100%',
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: rs(spacing.xs),
-  },
-  infoPills: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: rs(spacing.sm),
-    marginTop: rs(spacing.md),
-  },
-  infoPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingHorizontal: rs(spacing.sm),
-    paddingVertical: rs(spacing.xs / 2),
-    borderRadius: normalize(12),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  infoPillText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
-    fontSize: normalize(11),
+    transform: [{ rotate: '-45deg' }],
   },
   title: {
-    ...responsiveTypography.h1,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.sm),
+    fontSize: 28,
     fontWeight: '800',
+    color: colors.text.white,
+    letterSpacing: -1,
+    marginBottom: 4,
   },
   subtitle: {
-    ...responsiveTypography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: normalize(22),
-    marginBottom: rs(spacing.md),
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
   },
-  welcomeBadge: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: rs(spacing.md),
-    paddingVertical: rs(spacing.xs),
-    borderRadius: normalize(20),
-    marginTop: rs(spacing.sm),
+  glassCard: {
+    borderRadius: 24,
+    padding: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
   },
-  badgeText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  card: {
+  form: {
     width: '100%',
-    marginBottom: rs(spacing.xl),
-    marginHorizontal: 0,
-  },
-  formSection: {
-    width: '100%',
-    gap: rs(spacing.lg),
   },
   inputGroup: {
-    width: '100%',
-    gap: rs(spacing.sm),
+    marginBottom: 20,
   },
-  inputLabel: {
-    ...responsiveTypography.body,
-    color: colors.text.primary,
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: rs(spacing.xs),
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 8,
   },
-  inputContainer: {
-    width: '100%',
-    position: 'relative',
+  forgotText: {
+    fontSize: 14,
+    color: colors.primaryLight,
+    fontWeight: '700',
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    left: rs(spacing.md),
-    zIndex: 1,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: rs(spacing.md),
-    zIndex: 1,
-  },
-  textInputWithIcon: {
-    paddingLeft: rs(spacing.xl + spacing.lg),
-    paddingRight: rs(spacing.xl + spacing.lg),
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    paddingLeft: rs(spacing.lg),
-    paddingRight: rs(spacing.lg),
-    paddingVertical: rs(spacing.md + 2),
-    fontSize: normalize(16),
-    borderWidth: 2,
-    borderColor: colors.borderLight,
-    borderRadius: normalize(16),
-    color: colors.text.primary,
-    shadowColor: colors.shadow.light,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 60,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   inputFocused: {
     borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: 'rgba(37, 99, 235, 0.05)',
   },
   inputError: {
-    borderColor: colors.danger,
-    borderWidth: 2,
+    borderColor: '#ef4444',
   },
-  errorText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.danger,
-    marginTop: rs(spacing.xs),
-    marginLeft: rs(spacing.sm),
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: colors.text.white,
+    fontWeight: '500',
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: rs(spacing.xs),
+  primaryButton: {
+    height: 60,
+    borderRadius: 18,
+    marginTop: 10,
+    overflow: 'hidden',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
   },
-  forgotPasswordText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  loginButton: {
+  buttonGradient: {
+    flex: 1,
     flexDirection: 'row',
-    backgroundColor: colors.primary,
-    paddingVertical: rs(spacing.md + 4),
-    borderRadius: normalize(16),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: rs(spacing.md),
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  loginButtonText: {
-    ...responsiveTypography.body,
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.white,
+    marginRight: 8,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 25,
+  },
+  footerText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 15,
+  },
+  signUpLink: {
     color: colors.text.white,
     fontWeight: '700',
-    fontSize: normalize(16),
+    fontSize: 15,
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  signupLink: {
+  bottomFeatures: {
     alignItems: 'center',
-    paddingVertical: rs(spacing.md),
+    marginTop: 30,
   },
-  signupText: {
-    ...responsiveTypography.body,
-    color: colors.text.secondary,
-  },
-  signupTextBold: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  divider: {
+  featurePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: spacing.lg,
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.2)',
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    ...typography.bodySmall,
-    color: colors.text.light,
-    marginHorizontal: spacing.md,
+  featurePillText: {
+    fontSize: 12,
     fontWeight: '600',
-  },
-  socialButton: {
-    marginBottom: spacing.md,
-  },
-  socialButtonIcon: {
-    fontSize: 20,
-  },
-  featuresPreview: {
-    width: '100%',
-    backgroundColor: colors.primaryLight,
-    borderRadius: normalize(20),
-    padding: rs(spacing.lg),
-    alignItems: 'center',
-    marginTop: rs(spacing.lg),
-  },
-  featuresTitle: {
-    ...responsiveTypography.h4,
-    color: colors.primary,
-    fontWeight: '700',
-    marginBottom: rs(spacing.md),
-    textAlign: 'center',
-  },
-  featuresList: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: rs(spacing.sm),
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: rs(spacing.sm),
-    width: isSmallScreen ? '48%' : '48%',
-    minWidth: isSmallScreen ? '45%' : '45%',
-  },
-  featureText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.primary,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+    color: colors.primaryLight,
+    marginLeft: 6,
+  }
 });
 
 export default LoginScreen;

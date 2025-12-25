@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting enhanced database seeding...');
+  console.log('Starting enhanced database seeding...');
 
   // Clear existing data
   await prisma.subject.deleteMany();
@@ -17,8 +17,7 @@ async function main() {
   await prisma.college.deleteMany();
   await prisma.user.deleteMany();
 
-  // Seed Test Users
-  console.log('👤 Seeding test users...');
+  console.log('Seeding test users...');
   const hashedPassword = await bcrypt.hash('password123', 12);
   
   await prisma.user.create({
@@ -39,8 +38,7 @@ async function main() {
 
   console.log('✅ Test users created: test@example.com / john@example.com (password: password123)');
 
-  // Seed Teachers with LinkedIn profiles (no email display)
-  console.log('👨‍🏫 Seeding teachers with LinkedIn profiles...');
+  console.log('Seeding teachers with LinkedIn profiles...');
   const teachers = await Promise.all([
     prisma.teacher.create({
       data: {
@@ -146,8 +144,7 @@ async function main() {
     }),
   ]);
 
-  // Seed Semesters with detailed information
-  console.log('📚 Seeding semesters with complete details...');
+  console.log('Seeding semesters with complete details...');
   const semesters = await Promise.all([
     prisma.semester.create({ 
       data: { 
@@ -183,10 +180,8 @@ async function main() {
     }),
   ]);
 
-  // Seed Subjects with COMPLETE details including syllabus, topics, exams, and roadmap
-  console.log('📖 Seeding subjects with comprehensive details...');
+  console.log('Seeding subjects with comprehensive details...');
   
-  // SEMESTER 1 SUBJECTS
   await prisma.subject.create({
     data: {
       name: 'Programming Fundamentals',
@@ -1283,69 +1278,81 @@ Pass marks: 40/100`,
     }),
   ]);
 
-  // Seed Mess Menu
-  console.log('🍽️ Seeding mess menu...');
+  console.log('Seeding mess menu...');
   await Promise.all([
     prisma.mess.create({
       data: {
         day: 'Monday',
-        breakfast: 'Idli (3 pcs) with Sambar, Medu Vada (2 pcs), Coconut Chutney, Tea/Coffee, Bread Toast with Butter & Jam',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Dal Tadka, Paneer Butter Masala, Mix Veg Curry, Pickle & Papad, Curd/Buttermilk, Gulab Jamun',
-        dinner: 'Veg Fried Rice, Gobi Manchurian (Dry), Spring Rolls (2 pcs), Sweet Corn Soup, Green Salad, Ice Cream',
+        breakfast: 'Idli (3 pcs) with Sambar, Medu Vada (2 pcs), Coconut Chutney',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Dal Tadka, Paneer Butter Masala, Mix Veg Curry',
+        snacks: 'Samosa, Masala Tea',
+        dinner: 'Veg Fried Rice, Gobi Manchurian (Dry), Sweet Corn Soup, Ice Cream',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Tuesday',
-        breakfast: 'Poha with Peanuts & Curry Leaves, Jalebi (2 pcs), Tea/Coffee, Banana/Seasonal Fruit',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Rajma Masala, Aloo Jeera, Cabbage Poriyal, Pickle & Papad, Curd/Buttermilk, Kheer',
-        dinner: 'White Pasta in Red Sauce, Garlic Bread (3 pcs), Corn & Spinach Soup, Caesar Salad, Brownie with Vanilla Ice Cream',
+        breakfast: 'Poha with Peanuts, Jalebi (2 pcs), Banana/Seasonal Fruit',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Rajma Masala, Aloo Jeera, Cabbage Poriyal',
+        snacks: 'Biscuits, Coffee/Tea',
+        dinner: 'White Pasta in Red Sauce, Garlic Bread (3 pcs), Corn & Spinach Soup',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Wednesday',
-        breakfast: 'Upma with Vegetables, Coconut Chutney, Coffee/Tea, Boiled Eggs (2 pcs) - Optional',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Chole Masala, Bhindi Fry, Aloo Matar, Pickle & Papad, Curd/Buttermilk, Rasgulla',
-        dinner: 'Veg Biryani with Raita, Mirchi ka Salan, Boondi Raita, Onion Salad, Gulab Jamun',
+        breakfast: 'Upma with Vegetables, Coconut Chutney, Boiled Eggs (2 pcs)',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Chole Masala, Bhindi Fry, Aloo Matar',
+        snacks: 'Paneer Pakora, Tea',
+        dinner: 'Veg Biryani with Raita, Mirchi ka Salan, Gulab Jamun',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Thursday',
-        breakfast: 'Aloo Paratha (2 pcs), Curd & Pickle, Tea/Coffee, Mixed Fruit Salad',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Sambar, Bhindi Masala, Aloo Gobi, Pickle & Papad, Curd/Buttermilk, Halwa',
-        dinner: 'Hakka Noodles, Chilli Paneer (Dry), Veg Spring Rolls (2 pcs), Hot & Sour Soup, Fresh Fruit Custard',
+        breakfast: 'Aloo Paratha (2 pcs), Curd & Pickle, Mixed Fruit Salad',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Sambar, Bhindi Masala, Aloo Gobi',
+        snacks: 'Bread Butter, Tea',
+        dinner: 'Hakka Noodles, Chilli Paneer (Dry), Hot & Sour Soup',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Friday',
-        breakfast: 'Masala Dosa with Sambar & Chutney, Medu Vada (2 pcs), Filter Coffee/Tea, Banana',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Kadhi Pakora, Aloo Gobi Masala, Green Peas Curry, Pickle & Papad, Curd/Buttermilk, Jalebi',
-        dinner: 'Cheese Pizza (2 slices), Garlic Bread Sticks (4 pcs), French Fries, Coleslaw Salad, Chocolate Mousse',
+        breakfast: 'Masala Dosa with Sambar & Chutney, Filter Coffee/Tea',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Kadhi Pakora, Aloo Gobi Masala',
+        snacks: 'Fruit Salad, Tea',
+        dinner: 'Cheese Pizza (2 slices), Garlic Bread Sticks (4 pcs), French Fries',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Saturday',
-        breakfast: 'Veg Sandwich (Grilled), Tomato Ketchup, Orange Juice/Tea, Cookies (2 pcs)',
-        lunch: 'Steamed Rice, Chapati (4 pcs), Dal Makhani, Paneer Tikka Masala, Mix Veg Korma, Pickle & Papad, Curd/Buttermilk, Gajar Halwa',
-        dinner: 'Veg Burger with Cheese, French Fries, Onion Rings, Cold Drink (300ml), Vanilla Ice Cream Sundae',
+        breakfast: 'Veg Sandwich (Grilled), Tomato Ketchup, Orange Juice',
+        lunch: 'Steamed Rice, Chapati (4 pcs), Dal Makhani, Paneer Tikka Masala',
+        snacks: 'Cookies, Coffee',
+        dinner: 'Veg Burger with Cheese, French Fries, Vanilla Ice Cream Sundae',
+        timing: '7:00 AM - 9:30 PM'
       },
     }),
     prisma.mess.create({
       data: {
         day: 'Sunday',
-        breakfast: 'Puri Bhaji (5 Puris), Aloo Sabzi, Halwa, Tea/Coffee, Fresh Juice - Special Sunday Breakfast',
-        lunch: 'Steamed Rice, Jeera Rice, Chapati (5 pcs), Dal Fry, Paneer Butter Masala, Veg Kolhapuri, Aloo Dum, Pickle & Papad, Curd/Buttermilk, Gulab Jamun & Kheer - Special Sunday Thali',
-        dinner: 'Veg Fried Rice, Chilli Paneer, Veg Manchurian, Spring Rolls (2 pcs), Sweet & Sour Soup, Fortune Cookie, Ice Cream (2 scoops) - Chinese Combo',
+        breakfast: 'Puri Bhaji (5 Puris), Aloo Sabzi, Halwa, Fresh Juice',
+        lunch: 'Jeera Rice, Chapati (5 pcs), Dal Fry, Paneer Butter Masala, Veg Kolhapuri',
+        snacks: 'Special Sunday Snack, Tea',
+        dinner: 'Veg Fried Rice, Chilli Paneer, Veg Manchurian, Spring Rolls',
+        timing: '7:30 AM - 10:00 PM'
       },
     }),
   ]);
 
-  // Seed Hostel
-  console.log('🏠 Seeding hostel...');
+  console.log('Seeding hostel...');
   await prisma.hostel.create({
     data: {
       name: `MyCampus Hostel - Premium Student Accommodation
@@ -1417,338 +1424,36 @@ Triple Occupancy: ₹45,000/year
     },
   });
 
-  // Seed Enhanced College Info
-  console.log('🏫 Seeding enhanced college information...');
+  console.log('🏫 Seeding professional college information...');
   await prisma.college.create({
     data: {
-      name: 'MyCampus Institute of Technology & Engineering',
-      info: `
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║    🎓 MYCAMPUS INSTITUTE OF TECHNOLOGY & ENGINEERING 🎓     ║
-║                                                              ║
-║              "Excellence in Technical Education"            ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 ABOUT US
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-MyCampus Institute of Technology & Engineering (MCITE) is a premier 
-educational institution established in 2010, dedicated to excellence 
-in technical education and research. Located in the heart of the city, 
-we provide world-class infrastructure and learning environment to 
-nurture innovative minds.
-
-🌟 Our Vision: To be a globally recognized institution of excellence 
-in technical education, research, and innovation.
-
-💡 Our Mission: To produce skilled professionals who contribute to 
-society through ethical practices and innovative solutions.
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏆 ACCREDITATIONS & RANKINGS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ NAAC A+ Grade Accredited
-✓ NBA Accredited Programs
-✓ AICTE Approved
-✓ Affiliated to State Technical University
-✓ Ranked among Top 50 Engineering Colleges in India
-✓ ISO 9001:2015 Certified
-✓ NIRF Ranked
-✓ QS World University Rankings Listed
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📚 ACADEMIC PROGRAMS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🎓 UNDERGRADUATE (B.Tech) - 4 Years:
-   • Computer Science & Engineering
-   • Electronics & Communication Engineering
-   • Mechanical Engineering
-   • Civil Engineering
-   • Electrical & Electronics Engineering
-   • Information Technology
-   • Artificial Intelligence & Machine Learning
-   
-🎓 POSTGRADUATE (M.Tech) - 2 Years:
-   • Computer Science & Engineering
-   • VLSI Design
-   • Structural Engineering
-   • Power Systems
-   • Embedded Systems
-
-🎓 RESEARCH PROGRAMS:
-   • Ph.D. in various specializations
-   • Post-Doctoral Research
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏢 WORLD-CLASS INFRASTRUCTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔬 ACADEMIC FACILITIES:
-   • 50+ Well-equipped Laboratories
-   • Central Library with 50,000+ books
-   • Digital Library with e-resources
-   • Smart Classrooms with ICT facilities
-   • Seminar Halls & Conference Rooms
-   • Research Centers
-   • Innovation & Incubation Center
-   • Maker Space & Fab Lab
-
-💻 COMPUTER FACILITIES:
-   • 500+ High-end Computers
-   • Latest Software & Development Tools
-   • 1 Gbps Internet Connectivity
-   • 24/7 WiFi Campus
-   • Cloud Computing Lab
-   • AI & ML Lab
-   • Cybersecurity Lab
-   • Data Science Lab
-
-⚽ SPORTS & RECREATION:
-   • Multi-purpose Sports Complex
-   • Cricket Ground (Full-size)
-   • Football Field
-   • Basketball Courts (2)
-   • Volleyball Courts (2)
-   • Tennis Courts
-   • Badminton Courts (Indoor)
-   • Table Tennis
-   • Chess Room
-   • Gymnasium with Modern Equipment
-   • Yoga & Meditation Center
-   • Swimming Pool (Olympic size)
-
-🏠 OTHER FACILITIES:
-   • Boys & Girls Hostels (1000+ capacity)
-   • Hygienic Cafeteria & Food Courts
-   • Medical Center with 24/7 Doctor
-   • Transportation Facility (20+ buses)
-   • ATM & Banking Services
-   • Stationery & Book Shop
-   • Auditorium (1000 seating capacity)
-   • Open Air Theatre
-   • Parking Facility
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👨‍🏫 FACULTY EXCELLENCE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• 100+ Highly Qualified Faculty Members
-• 80% Faculty with Ph.D. Degrees
-• Industry Experienced Professors
-• Regular Faculty Development Programs
-• Active Research Publications (200+ papers/year)
-• Patent Holders (25+ patents)
-• International Collaborations
-• Guest Lectures by Industry Experts
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 PLACEMENTS & TRAINING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 PLACEMENT HIGHLIGHTS:
-   • 95% Placement Record
-   • 500+ Companies Visit Annually
-   • Highest Package: ₹45 LPA
-   • Average Package: ₹8.5 LPA
-   • Median Package: ₹6.2 LPA
-
-🏢 TOP RECRUITERS:
-   • Google • Microsoft • Amazon • Apple
-   • TCS • Infosys • Wipro • Cognizant
-   • Accenture • Capgemini • HCL • Tech Mahindra
-   • IBM • Oracle • SAP • Adobe
-   • Flipkart • Paytm • Zomato • Swiggy
-   • Goldman Sachs • Morgan Stanley • JP Morgan
-
-📈 TRAINING PROGRAMS:
-   • Aptitude & Reasoning Training
-   • Technical Skills Development
-   • Soft Skills & Communication
-   • Mock Interviews & Group Discussions
-   • Resume Building Workshops
-   • Personality Development
-   • Industry Certification Courses
-   • Internship Assistance
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🤝 INDUSTRY PARTNERSHIPS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• 50+ MoUs with Leading Companies
-• Regular Industry Visits
-• Guest Lectures by Industry Experts
-• Internship Opportunities
-• Live Project Training
-• Hackathons & Coding Competitions
-• Industry-Academia Collaboration
-• Corporate Training Programs
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔬 RESEARCH & INNOVATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• 10+ Active Research Centers
-• 200+ Research Papers Published Annually
-• 25+ Patents Filed
-• Innovation & Incubation Cell
-• Startup Support & Funding
-• Research Grants Available
-• International Collaborations
-• State-of-the-art Research Labs
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🌟 STUDENT ACTIVITIES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💻 TECHNICAL CLUBS:
-   • Coding Club
-   • Robotics Club
-   • Electronics Club
-   • Innovation Club
-   • AI/ML Club
-   • Cybersecurity Club
-
-🎭 CULTURAL CLUBS:
-   • Music & Dance
-   • Drama & Theatre
-   • Literary Club
-   • Photography Club
-   • Art & Craft Club
-   • Film Making Club
-
-🌱 SOCIAL CLUBS:
-   • NSS (National Service Scheme)
-   • NCC (National Cadet Corps)
-   • Rotaract Club
-   • Environmental Club
-   • Women Empowerment Cell
-   • Anti-Ragging Committee
-
-🎉 ANNUAL EVENTS:
-   • Tech Fest - Innovation Summit
-   • Cultural Fest - Euphoria
-   • Sports Meet - Champions League
-   • Workshops & Seminars
-   • Hackathons & Competitions
-   • Industry Conclaves
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎓 ALUMNI NETWORK
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• 5000+ Alumni Worldwide
-• Alumni in Top MNCs (Google, Microsoft, Amazon)
-• Successful Entrepreneurs
-• Regular Alumni Meets
-• Mentorship Programs
-• Alumni Scholarship Fund
-• Career Guidance
-• Networking Opportunities
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📞 CONTACT INFORMATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🏢 Address:
-   MyCampus Institute of Technology
-   Tech Park Road, Knowledge City
-   Bangalore - 560100, Karnataka, India
-
-📱 Phone: +91-80-12345678
-📧 Email: info@mycampus.edu.in
-🌐 Website: www.mycampus.edu.in
-
-📞 HELPLINES:
-   Admission: +91-9876543200
-   Placement: +91-9876543201
-   Hostel: +91-9876543202
-   Library: +91-9876543203
-   Transport: +91-9876543204
-
-⏰ Office Hours:
-   Monday - Friday: 9:00 AM - 5:00 PM
-   Saturday: 9:00 AM - 1:00 PM
-   Sunday: Closed
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 WHY CHOOSE MYCAMPUS?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ Excellent Academic Record
-✓ Experienced & Qualified Faculty
-✓ State-of-the-art Infrastructure
-✓ Outstanding Placement Record (95%)
-✓ Strong Industry Connections
-✓ Research & Innovation Focus
-✓ Vibrant Campus Life
-✓ Affordable Fee Structure
-✓ Scholarship Programs Available
-✓ Safe & Secure Environment
-✓ Hostel Facilities
-✓ Sports & Recreation
-✓ 24/7 Library Access
-✓ Modern Labs & Equipment
-✓ International Exposure
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 ADMISSION PROCESS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📝 Eligibility:
-   • 10+2 with Physics, Chemistry, Mathematics
-   • Minimum 60% aggregate marks
-   • Valid entrance exam score (JEE Main/State CET)
-
-📅 Important Dates:
-   • Application Start: January 1
-   • Application Deadline: June 30
-   • Counseling: July
-   • Classes Begin: August
-
-💰 Fee Structure:
-   • Tuition Fee: ₹1,50,000/year
-   • Hostel Fee: ₹60,000/year
-   • Other Charges: ₹10,000/year
-
-🎓 Scholarships Available:
-   • Merit-based Scholarships (up to 100%)
-   • Need-based Financial Aid
-   • Sports Scholarships
-   • Minority Scholarships
-   • Government Scholarships
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Join MyCampus Institute and embark on a journey of excellence! 🎓
-
-Transform Your Dreams into Reality! 🚀
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`,
+      name: 'Newton School of Technology',
+      tagline: 'The Future of Engineering & Tech Leadership',
+      location: 'Global Education Hub, Sonipat, Delhi NCR',
+      about: 'Newton School of Technology is a premier institution dedicated to building the next generation of tech leaders. Founded with a vision to bridge the gap between academia and industry, we combine a cutting-edge computer science curriculum with world-class faculty and extensive industry exposure.',
+      stats: [
+        { label: 'Placements', value: '98%', icon: 'trending-up' },
+        { label: 'Avg Package', value: '₹12.5 LPA', icon: 'award' },
+        { label: 'Projects', value: '500+', icon: 'rocket' },
+        { label: 'Partners', value: '50+', icon: 'business' }
+      ],
+      facilities: [
+        { name: 'AI & ML Lab', icon: 'cpu' },
+        { name: 'Digital Library', icon: 'book-open' },
+        { name: 'Cloud Computing Hub', icon: 'cloud' },
+        { name: 'Sports Arena', icon: 'dribbble' },
+        { name: '24/7 Smart WiFi', icon: 'wifi' },
+        { name: 'Gourmet Cafeteria', icon: 'food' }
+      ],
+      contactInfo: {
+        phone: '011-4567-8900',
+        email: 'admissions@nst.edu',
+        website: 'www.newtonschool.co'
+      }
     },
   });
 
-  // Seed Timetables
-  console.log('⏰ Seeding timetables...');
+  console.log('Seeding timetables...');
   await Promise.all(
     semesters.map((semester) =>
       prisma.timetable.create({
@@ -1760,7 +1465,7 @@ Transform Your Dreams into Reality! 🚀
   );
 
   console.log('✅ Enhanced database seeding completed successfully!');
-  console.log('📊 Summary:');
+  console.log('Summary:');
   console.log(`   - ${teachers.length} Teachers (with LinkedIn profiles)`);
   console.log(`   - ${semesters.length} Semesters (with detailed info)`);
   console.log(`   - 12 Subjects (with complete syllabus, topics, exams, roadmap)`);
@@ -1772,7 +1477,7 @@ Transform Your Dreams into Reality! 🚀
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e);
+    console.error('Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {

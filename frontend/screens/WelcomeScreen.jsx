@@ -2,492 +2,326 @@ import React, { useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  SafeAreaView, 
   StatusBar, 
   StyleSheet,
   ScrollView,
   Dimensions,
   Animated,
-  TouchableOpacity
+  TouchableOpacity,
+  ImageBackground
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { globalStyles, colors, spacing, responsiveTypography, isSmallScreen } from '../styles/globalStyles';
 import { normalize, rs } from '../utils/responsive';
-
 import AnimatedBackground from '../components/AnimatedBackground';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const WelcomeScreen = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
+    StatusBar.setBarStyle('light-content');
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1000,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 800,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 20,
+        friction: 7,
         useNativeDriver: true,
       }),
     ]).start();
   }, []);
 
   return (
-    <SafeAreaView style={[globalStyles.safeArea, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <AnimatedBackground variant="none">
-        <ScrollView 
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Hero Section */}
-          <Animated.View 
-            style={[
-              styles.heroSection,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.logoContainer}>
-              <Ionicons name="school" size={72} color={colors.text.white} />
-            </View>
-            <Text style={styles.title}>MyCampusHub</Text>
-            <Text style={styles.subtitle}>Your Complete Campus Management Solution</Text>
-            <Text style={styles.description}>
-              Connect with faculty, access study materials, track events, and manage your academic journey all in one place.
-            </Text>
-          </Animated.View>
+            {/* Hero Section */}
+            <View style={styles.heroContainer}>
+              <Animated.View 
+                style={[
+                  styles.logoWrapper,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ scale: scaleAnim }]
+                  }
+                ]}
+              >
+                <LinearGradient
+                  colors={[colors.primary, '#8b5cf6']}
+                  style={styles.logoGradient}
+                >
+                  <Ionicons name="school" size={70} color={colors.text.white} />
+                </LinearGradient>
+                <View style={styles.logoRing} />
+              </Animated.View>
 
-        {/* Features Grid */}
-        <View style={[styles.featuresSection, styles.maxWidth] }>
-          <Text style={styles.sectionTitle}>Why Choose MyCampusHub?</Text>
-          
-          {/* Row 1 */}
-          <View style={styles.featureRow}>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#dbeafe'}]}>
-                <Ionicons name="book" size={40} color="#3b82f6" />
-              </View>
-              <Text style={styles.featureTitle}>Academic Resources</Text>
-              <Text style={styles.featureDescription}>Access study materials, roadmaps, and exam schedules</Text>
+              <Animated.View 
+                style={[
+                  styles.textContainer,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }]
+                  }
+                ]}
+              >
+                <Text style={styles.title}>MyCampusHub</Text>
+                <Text style={styles.headline}>Your Academic Universe, Unified.</Text>
+                <Text style={styles.description}>
+                  The ultimate companion for students and faculty. Manage academics, events, and campus life with a premium digital experience.
+                </Text>
+              </Animated.View>
             </View>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#d1fae5'}]}>
-                <FontAwesome5 name="chalkboard-teacher" size={36} color="#10b981" />
-              </View>
-              <Text style={styles.featureTitle}>Faculty Directory</Text>
-              <Text style={styles.featureDescription}>Connect with expert teachers and get guidance</Text>
-            </View>
-          </View>
-          
-          {/* Row 2 */}
-          <View style={styles.featureRow}>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#fef3c7'}]}>
-                <Ionicons name="calendar" size={40} color="#f59e0b" />
-              </View>
-              <Text style={styles.featureTitle}>Event Updates</Text>
-              <Text style={styles.featureDescription}>Stay updated with campus events and announcements</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#fecaca'}]}>
-                <Ionicons name="restaurant" size={40} color="#ef4444" />
-              </View>
-              <Text style={styles.featureTitle}>Mess Menu</Text>
-              <Text style={styles.featureDescription}>Check daily meal plans and dining options</Text>
-            </View>
-          </View>
-          
-          {/* Row 3 */}
-          <View style={styles.featureRow}>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#e0e7ff'}]}>
-                <MaterialIcons name="business" size={40} color="#6366f1" />
-              </View>
-              <Text style={styles.featureTitle}>College Info</Text>
-              <Text style={styles.featureDescription}>Complete college details and facilities</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIconContainer, {backgroundColor: '#ddd6fe'}]}>
-                <MaterialCommunityIcons name="home-city" size={40} color="#8b5cf6" />
-              </View>
-              <Text style={styles.featureTitle}>Hostel Details</Text>
-              <Text style={styles.featureDescription}>Hostel facilities and accommodation info</Text>
-            </View>
-          </View>
-        </View>
-          
-        {/* Stats Section */}
-        <View style={[styles.statsSection, styles.maxWidth]}>
-          <LinearGradient
-            colors={[colors.primary, '#8b5cf6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.statsGradient}
-          >
-            <View style={styles.statsTitleContainer}>
-              <MaterialIcons name="analytics" size={24} color={colors.text.white} style={{marginRight: 8}} />
-              <Text style={styles.statsTitle}>Campus Statistics</Text>
-            </View>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <FontAwesome5 name="chalkboard-teacher" size={28} color="#3b82f6" />
-                </View>
-                <Text style={styles.statNumber}>6+</Text>
-                <Text style={styles.statLabel}>Expert Faculty</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="book" size={28} color="#10b981" />
-                </View>
-                <Text style={styles.statNumber}>12+</Text>
-                <Text style={styles.statLabel}>Subjects</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="people" size={28} color="#f59e0b" />
-                </View>
-                <Text style={styles.statNumber}>100+</Text>
-                <Text style={styles.statLabel}>Students</Text>
-              </View>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <MaterialIcons name="support-agent" size={28} color="#ef4444" />
-                </View>
-                <Text style={styles.statNumber}>24/7</Text>
-                <Text style={styles.statLabel}>Support</Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </View>
 
-        {/* CTA Section */}
-        <View style={[styles.ctaSection, styles.maxWidth]}>
-          <Text style={styles.ctaTitle}>Ready to Get Started?</Text>
-          <Text style={styles.ctaSubtitle}>Join thousands of students already using MyCampusHub</Text>
-          
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Login')}
-              style={styles.primaryButton}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="log-in" size={20} color={colors.text.white} style={{marginRight: 8}} />
-              <Text style={styles.primaryButtonText}>Sign In</Text>
-            </TouchableOpacity>
+            {/* Features Preview */}
+            <View style={styles.featuresContainer}>
+              <BlurView intensity={20} tint="dark" style={styles.featureGlass}>
+                <View style={styles.featureItem}>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(37, 99, 235, 0.2)' }]}>
+                    <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#60a5fa" />
+                  </View>
+                  <View style={styles.featureText}>
+                    <Text style={styles.featureTitle}>Academic Hub</Text>
+                    <Text style={styles.featureDesc}>Roadmaps, Credits & Syllabus</Text>
+                  </View>
+                </View>
+
+                <View style={styles.featureItem}>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
+                    <Ionicons name="people" size={24} color="#a78bfa" />
+                  </View>
+                  <View style={styles.featureText}>
+                    <Text style={styles.featureTitle}>Faculty Portal</Text>
+                    <Text style={styles.featureDesc}>Connect with Expert Teachers</Text>
+                  </View>
+                </View>
+
+                <View style={styles.featureItem}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                    <MaterialIcons name="event-available" size={24} color="#34d399" />
+                  </View>
+                  <View style={styles.featureText}>
+                    <Text style={styles.featureTitle}>Campus Life</Text>
+                    <Text style={styles.featureDesc}>Events, Mess & Daily Updates</Text>
+                  </View>
+                </View>
+              </BlurView>
+            </View>
+
+            {/* Bottom Section with Buttons */}
+            <View style={styles.ctaContainer}>
+              <TouchableOpacity 
+                activeOpacity={0.9}
+                style={styles.mainButton}
+                onPress={() => navigation.navigate('Login')}
+              >
+                <LinearGradient
+                  colors={[colors.primary, '#6366f1']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.buttonGradient}
+                >
+                  <Text style={styles.buttonText}>Get Started</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.text.white} />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.secondaryButton}
+                onPress={() => navigation.navigate('Signup')}
+              >
+                <Text style={styles.secondaryButtonText}>Create an account</Text>
+              </TouchableOpacity>
+            </View>
             
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Signup')}
-              style={styles.secondaryButton}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="person-add" size={20} color={colors.primary} style={{marginRight: 8}} />
-              <Text style={styles.secondaryButtonText}>Create Account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={[styles.footer, styles.maxWidth]}>
-          <Text style={styles.footerText}>© 2024 MyCampusHub. All rights reserved.</Text>
-          <Text style={styles.footerSubtext}>Made for students</Text>
-        </View>
-      </ScrollView>
-      
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>© 2024 MyCampusHub • Version 2.0</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
       </AnimatedBackground>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  maxWidth: {
-    width: '100%',
-    alignSelf: 'center',
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#0f172a',
   },
-  scrollContainer: {
+  safeArea: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: rs(spacing.xxl),
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    justifyContent: 'center',
   },
-  heroSection: {
-    width: '100%',
-    paddingHorizontal: rs(spacing.lg),
-    paddingVertical: rs(spacing.xxl),
+  heroContainer: {
     alignItems: 'center',
-    borderBottomLeftRadius: normalize(32),
-    borderBottomRightRadius: normalize(32),
+    marginTop: 20,
+    marginBottom: 40,
   },
-  logoContainer: {
-    width: normalize(140),
-    height: normalize(140),
-    borderRadius: normalize(70),
-    backgroundColor: colors.primary,
+  logoWrapper: {
+    width: 120,
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: rs(spacing.lg),
+    marginBottom: 30,
+  },
+  logoGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    transform: [{ rotate: '-10deg' }],
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  logoRing: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 45,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderStyle: 'dashed',
+  },
+  textContainer: {
+    alignItems: 'center',
   },
   title: {
-    ...responsiveTypography.h1,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.sm),
+    fontSize: 38,
     fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -1.5,
+    marginBottom: 10,
   },
-  subtitle: {
-    ...responsiveTypography.h4,
+  headline: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.primaryLight,
+    marginBottom: 15,
     textAlign: 'center',
-    marginBottom: rs(spacing.md),
-    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   description: {
-    ...responsiveTypography.body,
-    color: colors.text.primary,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    lineHeight: normalize(24),
-    opacity: 0.9,
-    paddingHorizontal: rs(spacing.md),
+    lineHeight: 24,
+    paddingHorizontal: 10,
+    fontWeight: '500',
   },
-  featuresSection: {
-    width: '100%',
-    paddingHorizontal: rs(spacing.lg),
-    paddingVertical: rs(spacing.xxl),
+  featuresContainer: {
+    marginBottom: 40,
   },
-  sectionTitle: {
-    ...responsiveTypography.h3,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.xl),
-    fontWeight: '800',
-  },
-  featureRow: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    marginBottom: rs(spacing.lg),
-  },
-  featureCard: {
-    width: isSmallScreen ? '100%' : '48.5%',
-    backgroundColor: colors.surface,
-    borderRadius: normalize(20),
-    padding: rs(spacing.lg),
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+  featureGlass: {
+    borderRadius: 28,
+    padding: 22,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    marginBottom: isSmallScreen ? rs(spacing.md) : 0,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  featureIconContainer: {
-    width: normalize(80),
-    height: normalize(80),
-    borderRadius: normalize(40),
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: rs(spacing.md),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    marginRight: 16,
+  },
+  featureText: {
+    flex: 1,
   },
   featureTitle: {
-    ...responsiveTypography.h4,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.sm),
+    fontSize: 16,
     fontWeight: '700',
+    color: colors.text.white,
+    marginBottom: 2,
   },
-  featureDescription: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: normalize(20),
+  featureDesc: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: '500',
   },
-  statsSection: {
+  ctaContainer: {
     width: '100%',
-    marginHorizontal: rs(spacing.lg),
-    marginBottom: rs(spacing.xl),
-    borderRadius: normalize(20),
+    alignItems: 'center',
+  },
+  mainButton: {
+    width: '100%',
+    height: 64,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    marginBottom: 15,
   },
-  statsGradient: {
-    padding: rs(spacing.xl),
-  },
-  statsTitleContainer: {
+  buttonGradient: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: rs(spacing.lg),
   },
-  statsTitle: {
-    ...responsiveTypography.h4,
-    color: colors.text.white,
-    textAlign: 'center',
-    fontWeight: '700',
-  },
-  statIconContainer: {
-    width: normalize(60),
-    height: normalize(60),
-    borderRadius: normalize(30),
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: rs(spacing.sm),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statsGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    gap: rs(spacing.sm),
-  },
-  statItem: {
-    alignItems: 'center',
-    width: isSmallScreen ? '48%' : '23%',
-    minWidth: isSmallScreen ? '45%' : '20%',
-    marginBottom: rs(spacing.sm),
-  },
-  statNumber: {
-    ...responsiveTypography.h2,
-    color: colors.text.white,
-    fontWeight: '900',
-    marginBottom: rs(spacing.xs),
-  },
-  statLabel: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.white,
-    fontWeight: '600',
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-  ctaSection: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: normalize(20),
-    paddingHorizontal: rs(spacing.lg),
-    paddingVertical: rs(spacing.xl),
-    alignItems: 'center',
-    marginHorizontal: rs(spacing.lg),
-    marginBottom: rs(spacing.xl),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  ctaTitle: {
-    ...responsiveTypography.h3,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.sm),
+  buttonText: {
+    fontSize: 18,
     fontWeight: '800',
-  },
-  ctaSubtitle: {
-    ...responsiveTypography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: rs(spacing.xl),
-    lineHeight: normalize(24),
-  },
-  buttonContainer: {
-    width: '100%',
-    gap: rs(spacing.md),
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: colors.primary,
-    paddingVertical: rs(spacing.md + 4),
-    borderRadius: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: rs(spacing.md),
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  primaryButtonText: {
-    ...responsiveTypography.body,
     color: colors.text.white,
-    fontWeight: '700',
-    fontSize: normalize(16),
+    marginRight: 10,
   },
   secondaryButton: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: colors.surface,
-    paddingVertical: rs(spacing.md + 4),
-    borderRadius: normalize(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: 10,
   },
   secondaryButtonText: {
-    ...responsiveTypography.body,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: normalize(16),
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.6)',
   },
   footer: {
-    width: '100%',
-    paddingHorizontal: rs(spacing.lg),
-    paddingVertical: rs(spacing.xl),
+    marginTop: 30,
     alignItems: 'center',
-    marginTop: rs(spacing.xl),
   },
   footerText: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.light,
-    textAlign: 'center',
-    marginBottom: rs(spacing.xs),
-  },
-  footerSubtext: {
-    ...responsiveTypography.bodySmall,
-    color: colors.text.light,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontWeight: '600',
+    letterSpacing: 1,
+  }
 });
 
 export default WelcomeScreen;

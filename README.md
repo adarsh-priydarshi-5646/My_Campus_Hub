@@ -1,302 +1,93 @@
-# 🎓 MyCampusHub - Complete Campus Management System
+# MyCampusHub 🎓
 
-A **production-ready, fully-featured** college management system built with React Native and Node.js. Features include profile management, real-time database sync, professional UI with React icons, and complete CRUD operations.
+**MyCampusHub** is an enterprise-grade campus management system designed to streamline academic operations, social connectivity, and utility management for modern educational institutions. Built with a robust **Node.js/Prisma** backend and a high-performance **React Native (Expo)** frontend, it delivers a premium, seamless experience for students and faculty.
 
-[![React Native](https://img.shields.io/badge/React%20Native-0.72-blue.svg)](https://reactnative.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Expo](https://img.shields.io/badge/Expo-49-black.svg)](https://expo.dev/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-orange.svg)](https://www.mysql.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+## 🚀 Features
 
-## ✨ **Production-Ready Features**
+### 📚 Academic Excellence
+- **Expert Roadmap**: Visualize your entire semester with a connected, step-by-step learning path.
+- **Curriculum Tracker**: Real-time tracking of credits, lectures, and lab hours.
+- **Faculty & Mentors**: Direct access to faculty profiles and assigned mentorship details.
 
-### 🎯 **Complete User Management**
-- **Profile Editing** - Edit name, email, roll number, branch with database sync
-- **Image Upload** - Camera/Gallery with compression (5MB limit)
-- **Skills Management** - Add/Remove skills with real-time updates
-- **Achievements** - Add/Remove achievements with icon selector
-- **Settings** - Notifications & Dark mode toggles
-- **Secure Logout** - Session invalidation with database cleanup
+### 🏛️ Campus Life
+- **Digital Campus**: Virtual tour of world-class facilities and institute highlights.
+- **Events Hub**: Stay updated with technical, cultural, and sports events.
+- **Mess & Hostel**: Live menus, hostel attendance, and utility management.
 
-### 🎨 **Professional UI Design**
-- **React Native Icons** - 150+ professional icons (Ionicons, MaterialIcons, FontAwesome5)
-- **Gradient Backgrounds** - Beautiful gradients throughout
-- **Shadow System** - Multiple elevation levels
-- **Responsive Design** - Works on all screen sizes
-
-## 🚀 **Core Features**
-
-### **11 Enhanced Pages**
-1. **🏠 Home Screen** - Quick access cards, semester list
-2. **👤 Profile Screen** - Fully editable with image upload
-3. **🏫 College Details** - Newton School of Technology complete info
-4. **🍽️ Mess Details** - 7-day weekly menu with timings
-5. **📚 Semester Details** - Subject cards with React icons
-6. **🗺️ Study Roadmap** - Smart text parsing
-7. **📅 Events** - Category detection, gradient backgrounds
-8. **👨‍🏫 Faculty** - Faculty list with department filter
-9. **👨‍🏫 Faculty Details** - Complete faculty information
-10. **🔐 Login/Signup** - JWT authentication
-11. **👋 Welcome** - Onboarding screen
-
-### **Complete CRUD Operations**
-- ✅ **Create** - Register user, add skills/achievements
-- ✅ **Read** - Fetch all data from database
-- ✅ **Update** - Edit profile, update user data
-- ✅ **Delete** - Logout (session deactivation)
-
-## 🛠️ Tech Stack
-
-### Backend
-- **Node.js + Express.js** - RESTful API
-- **Prisma ORM** - Database management
-- **MySQL** - Production database
-- **JWT Authentication** - Secure token-based auth
-- **Session Management** - Database-backed sessions
-- **bcrypt** - Password hashing
-
-### Frontend
-- **React Native + Expo** - Cross-platform mobile development
-- **React Navigation** - Stack navigation
-- **AsyncStorage** - Local data persistence
-- **Axios** - HTTP client for API calls
-- **@expo/vector-icons** - Professional icons (Ionicons, MaterialIcons, FontAwesome5)
-- **expo-image-picker** - Camera/Gallery image upload
-- **expo-linear-gradient** - Gradient backgrounds
-- **React Context API** - State management
-- **Custom Hooks** - Reusable logic
-
-## 📦 Installation & Setup
-
-### Prerequisites
-- Node.js 18+ and npm 8+
-- Expo CLI (`npm install -g @expo/cli`)
-- For mobile development: Expo Go app
-
-### Backend Setup
-
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables:**
-   ```bash
-   cp production.env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Set up database:**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   npx prisma db seed
-   ```
-
-5. **Start the server:**
-   ```bash
-   npm start
-   # Server will run on http://localhost:3001
-   ```
-
-### Frontend Setup
-
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm start
-   # Follow the Expo CLI instructions to run on device/simulator
-   ```
-
-## 🎨 **3D Components Library**
-
-### **Button3D Component**
-```jsx
-<Button3D 
-  title="Click Me"
-  onPress={handlePress}
-  variant="primary" // primary, secondary, success, warning, danger
-  size="large" // small, medium, large
-  icon={<Text>🎯</Text>}
-/>
-```
-
-### **Card3D Component**
-```jsx
-<Card3D 
-  variant="primary" // primary, success, warning, danger, gradient
-  elevation="high" // low, medium, high, ultra
-  onPress={handlePress}
->
-  <Text>Card Content</Text>
-</Card3D>
-```
-
-### **Icon3D Component**
-```jsx
-<Icon3D 
-  emoji="🎓"
-  size="large" // small, medium, large, xl, xxl
-  variant="primary" // primary, success, warning, danger, gradient
-/>
-```
-
-### **FloatingActionButton Component**
-```jsx
-<FloatingActionButton
-  icon="💬"
-  onPress={handlePress}
-  variant="primary"
-  size="large"
-  position="bottomRight" // bottomRight, bottomLeft, topRight, topLeft
-/>
-```
-
-### **AnimatedBackground Component**
-```jsx
-<AnimatedBackground variant="gradient"> // gradient, wave
-  <Text>Content with animated background</Text>
-</AnimatedBackground>
-```
-
-## 🔧 Configuration
-
-### Backend Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```env
-NODE_ENV=development
-PORT=3001
-DATABASE_URL="file:./prisma/dev.db"
-JWT_SECRET=your_development_jwt_secret_key_min_32_chars_long
-SESSION_SECRET=your_development_session_secret_key_min_32_chars_long
-FRONTEND_URL=http://localhost:8081
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-```
-
-### Frontend Configuration
-
-Update `services/api.js` with your backend URL:
-```javascript
-const DEVELOPMENT_API_URL = 'http://localhost:3001/api';
-```
-
-## 📱 Running the App
-
-### Development Mode
-
-1. **Start Backend:**
-   ```bash
-   cd backend && npm start
-   ```
-
-2. **Start Frontend:**
-   ```bash
-   cd frontend && npm start
-   ```
-
-3. **Run on Device:**
-   - Install Expo Go app on your phone
-   - Scan the QR code from terminal
-   - Or use iOS Simulator / Android Emulator
-
-### Production Build
-
-See `DEPLOYMENT_GUIDE.md` for detailed production deployment instructions.
-
-## 🗄️ Database Schema
-
-The app uses the following main entities:
-- **Users** - Authentication and user management
-- **Teachers** - Faculty information
-- **Semesters** - Academic semesters
-- **Subjects** - Course subjects with roadmaps
-- **Exams** - Exam schedules
-- **Timetable** - Class schedules
-- **Hostels** - Hostel information
-- **Mess** - Mess menu
-- **Events** - Campus events
-- **College** - College information
-
-## 🔐 Authentication
-
-The app supports multiple authentication methods:
-- **Local Registration/Login** - Email and password
-- **Google OAuth** - Sign in with Google
-- **GitHub OAuth** - Sign in with GitHub
-
-## 📊 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-- `GET /api/auth/google` - Google OAuth
-- `GET /api/auth/github` - GitHub OAuth
-
-### Academic
-- `GET /api/academics/semesters` - Get all semesters
-- `GET /api/academics/subjects/:semesterId` - Get subjects by semester
-- `GET /api/academics/details/:semesterId` - Get semester details
-
-### Faculty
-- `GET /api/faculty` - Get all faculty
-- `GET /api/faculty/:id` - Get faculty by ID
-
-### Other
-- `GET /api/college` - College information
-- `GET /api/events` - Campus events
-- `GET /api/hostel` - Hostel information
-- `GET /api/mess` - Mess menu
-- `GET /api/timetable/:semesterId` - Timetable
-
-## 🚀 Deployment
-
-For production deployment, see the comprehensive `DEPLOYMENT_GUIDE.md` file.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 👨‍💻 Author
-
-**Adarsh Priydarshi**
-- GitHub: [@adarshpriydarshi](https://github.com/adarsh-priydarshi-5646)
-- LinkedIn: [Adarsh Priydarshi](https://www.linkedin.com/in/adarsh-p1/)
-
-## 🆘 Support
-
-If you encounter any issues or have questions:
-1. Check the existing issues
-2. Create a new issue with detailed description
-3. Contact the author
+### 🔐 Security & Utilities
+- **Secure Authentication**: Robust JWT-based login/signup flow.
+- **Responsive Design**: Optimized for all screen sizes with a custom scaling engine.
+- **Offline Resilience**: Graceful error handling and retry mechanisms.
 
 ---
 
-**Happy Coding! 🎉**
+## 🛠️ Technology Stack
+
+- **Frontend**: React Native, Expo, Reanimated, BlurView
+- **Backend**: Node.js, Express, Prisma ORM
+- **Database**: PostgreSQL (via Prisma)
+- **Styling**: Custom Design System (GlobalStyles), Tailwind-inspired utility tokens
+- **Architecture**: MVC (Backend), Component-Based (Frontend)
+
+---
+
+## 📂 Project Structure
+
+```bash
+MyCampusHub/
+├── backend/            # Express API & Prisma Schema
+│   ├── controllers/    # Logic for Academics, Auth, Events
+│   ├── prisma/         # Database Models & Migrations
+│   └── routes/         # API Endpoint Definitions
+│
+└── frontend/           # React Native App
+    ├── screens/        # UI Screens (College, Events, Roadmap...)
+    ├── components/     # Reusable UI (Cards, Badges, Headers)
+    ├── services/       # API Integration (Axios)
+    ├── styles/         # Global Design System
+    └── utils/          # Responsive Scaling Helpers
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL Database
+- Expo Go App (for mobile testing)
+
+### Installation
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/mycampushub.git
+   cd MyCampusHub
+   ```
+
+2. **Setup Backend**
+   ```bash
+   cd backend
+   npm install
+   npx prisma migrate dev  # Initialize DB
+   npm run dev             # Start Server on Port 3001
+   ```
+
+3. **Setup Frontend**
+   ```bash
+   cd ../frontend
+   npm install
+   npx expo start -c       # Start Metro Bundler
+   ```
+
+---
+
+## 🤝 Contribution
+
+We follow strict coding standards. Please run lint checks before pushing.
+1. Fork the repo.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+
+---
+
+**© 2025 MyCampusHub Team.** Built for the Future of Education.

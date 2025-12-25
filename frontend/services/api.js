@@ -51,7 +51,7 @@ api.interceptors.response.use(
 );
 
 export const apiLogin = (email, password) => api.post('/auth/login', { email, password });
-export const apiRegister = (name, email, password) => api.post('/auth/register', { name, email, password });
+export const apiRegister = (userData) => api.post('/auth/register', userData);
 export const apiLogout = () => api.post('/auth/logout');
 export const apiLogoutAll = () => api.post('/auth/logout-all');
 export const apiGetCurrentUser = () => api.get('/auth/me');

@@ -9,7 +9,6 @@ const getSemesters = async (req, res) => {
   }
 };
 
-// Subjects by semester
 const getSubjects = async (req, res) => {
   const { semesterId } = req.params;
   try {
@@ -40,7 +39,7 @@ const getSubjects = async (req, res) => {
   }
 };
 
-// Semester Details (Subjects + Teachers + Exam Dates)
+
 const getSemesterDetails = async (req, res) => {
   const { semesterId } = req.params;
   try {

@@ -3,19 +3,26 @@ import {
   View, 
   Text, 
   TouchableOpacity, 
-  SafeAreaView, 
   StatusBar, 
   StyleSheet,
   Alert,
-  ScrollView
+  ScrollView,
+  Dimensions,
+  RefreshControl,
+  Animated,
+  ActivityIndicator
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fetchSemesters } from '../services/api';
-import { globalStyles, colors, typography, spacing, isSmallScreen } from '../styles/globalStyles';
+import { colors, typography, spacing, isSmallScreen } from '../styles/globalStyles';
 import { normalize, rs } from '../utils/responsive';
-import AnimatedButton from '../components/AnimatedButton';
-import AnimatedCard from '../components/AnimatedCard';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedBackground from '../components/AnimatedBackground';
+
+const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
   const [semesters, setSemesters] = useState([]);
@@ -26,14 +33,12 @@ const HomeScreen = ({ navigation }) => {
 
   const loadSemesters = async (isRefresh = false) => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      
       setError(null);
       const res = await fetchSemesters();
-      // Sort semesters in ascending order by name
+      
       const sortedSemesters = res.data.sort((a, b) => {
         const aNum = parseInt(a.name.match(/\d+/)?.[0] || '0');
         const bNum = parseInt(b.name.match(/\d+/)?.[0] || '0');
@@ -41,805 +46,458 @@ const HomeScreen = ({ navigation }) => {
       });
       setSemesters(sortedSemesters);
     } catch (err) {
-      if (__DEV__) console.error('Error loading semesters:', err);
-      
-      // Handle 401 Unauthorized - redirect to login
       if (err.response?.status === 401) {
-        Alert.alert(
-          'Session Expired',
-          'Your session has expired. Please login again.',
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                await logout();
-                // Navigation will automatically switch to Welcome screen
-              }
-            }
-          ]
-        );
+        Alert.alert('Session Expired', 'Please login again.', [{ text: 'OK', onPress: logout }]);
         return;
       }
-      
-      setError(err.response?.data?.error || err.message || 'Failed to load semesters. Please try again.');
+      setError('Curriculum currently unavailable');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    loadSemesters(true);
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const success = await logout();
-              if (success) {
-                if (__DEV__) console.log('HomeScreen: Logout successful');
-              } else {
-                Alert.alert('Error', 'Failed to logout. Please try again.');
-              }
-            } catch (error) {
-              if (__DEV__) console.error('HomeScreen: Logout error:', error);
-              Alert.alert('Error', 'An error occurred during logout.');
-            }
-          }
-        }
-      ],
-      { cancelable: false }
-    );
-  };
-
   useEffect(() => {
     loadSemesters();
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading your semesters...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handleLogout = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign Out", style: "destructive", onPress: logout }
+    ]);
+  };
 
-  if (error) {
-  return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.errorContainer}>
-          <Ionicons name="warning" size={64} color={colors.error} style={{marginBottom: spacing.lg}} />
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
-          <TouchableOpacity 
-            onPress={loadSemesters}
-            style={[globalStyles.button, styles.retryButton]}
-            activeOpacity={0.8}
-          >
-            <Text style={globalStyles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
+  const renderQuickAccess = (title, icon, color, onPress, badge) => (
+    <TouchableOpacity 
+      activeOpacity={0.7} 
+      style={styles.cardWrapper} 
+      onPress={onPress}
+    >
+      <BlurView intensity={30} tint="dark" style={styles.quickAccessCard}>
+        <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
+          {React.cloneElement(icon, { size: rs(24), color: color })}
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={[styles.scrollContent, styles.maxWidth]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
-        <View style={styles.headerContainer}>
-          <View style={styles.topBar}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="school" size={28} color={colors.primary} />
-            </View>
-            <View style={styles.topBarActions}>
-              <TouchableOpacity 
-                style={styles.profileButton}
-                onPress={() => navigation.navigate('Profile')}
-              >
-                <Ionicons name="person" size={20} color={colors.text.white} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.logoutButton}
-                onPress={handleLogout}
-              >
-                <Text style={styles.logoutText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.header}>
-            <Text style={styles.title}>MyCampusHub</Text>
-            <Text style={styles.subtitle}>Welcome back, {user?.name || 'User'}!</Text>
-            <Text style={styles.description}>Your complete campus management solution</Text>
-          </View>
-        </View>
-        
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Access</Text>
-          <Text style={styles.sectionSubtitle}>Access your campus features instantly</Text>
-        </View>
-        
-        {/* 2x2 Grid Layout */}
-        <View style={styles.gridContainer}>
-          {/* First Row */}
-          <View style={styles.gridRow}>
-            <View style={styles.cardWrapper}>
-              <AnimatedButton 
-                style={[styles.quickAccessCard, styles.facultyCard]}
-                onPress={() => navigation.navigate('Faculty')}
-                animationType="bounce"
-              >
-                <FontAwesome5 name="chalkboard-teacher" size={36} color="#3b82f6" style={{marginBottom: spacing.md}} />
-                <Text style={styles.quickAccessTitle}>Faculty</Text>
-                <Text style={styles.quickAccessSubtitle}>Meet our expert teachers</Text>
-                <View style={styles.cardBadge}>
-                  <Text style={styles.badgeText}>6 Teachers</Text>
-                </View>
-              </AnimatedButton>
-            </View>
-
-            <View style={styles.cardWrapper}>
-              <AnimatedButton 
-                style={[styles.quickAccessCard, styles.eventsCard]}
-                onPress={() => navigation.navigate('Events')}
-                animationType="bounce"
-              >
-                <MaterialIcons name="event" size={36} color="#10b981" style={{marginBottom: spacing.md}} />
-                <Text style={styles.quickAccessTitle}>Events</Text>
-                <Text style={styles.quickAccessSubtitle}>Upcoming activities</Text>
-                <View style={styles.cardBadge}>
-                  <Text style={styles.badgeText}>3 Events</Text>
-                </View>
-              </AnimatedButton>
-            </View>
-          </View>
-
-          {/* Second Row */}
-          <View style={styles.gridRow}>
-            <View style={styles.cardWrapper}>
-              <AnimatedButton 
-                style={[styles.quickAccessCard, styles.collegeCard]}
-                onPress={() => navigation.navigate('CollegeDetails')}
-                animationType="bounce"
-              >
-                <FontAwesome5 name="university" size={36} color="#8b5cf6" style={{marginBottom: spacing.md}} />
-                <Text style={styles.quickAccessTitle}>College Info</Text>
-                <Text style={styles.quickAccessSubtitle}>Discover our campus</Text>
-                <View style={styles.cardBadge}>
-                  <Text style={styles.badgeText}>A+ Grade</Text>
-                </View>
-              </AnimatedButton>
-            </View>
-
-            <View style={styles.cardWrapper}>
-              <AnimatedButton 
-                style={[styles.quickAccessCard, styles.messCard]}
-                onPress={() => navigation.navigate('MessDetails')}
-                animationType="bounce"
-              >
-                <MaterialIcons name="restaurant-menu" size={36} color="#f59e0b" style={{marginBottom: spacing.md}} />
-                <Text style={styles.quickAccessTitle}>Mess Menu</Text>
-                <Text style={styles.quickAccessSubtitle}>Today's delicious meals</Text>
-                <View style={styles.cardBadge}>
-                  <Text style={styles.badgeText}>7 Days</Text>
-                </View>
-              </AnimatedButton>
-            </View>
-          </View>
-        </View>
-        
-        {/* Visual Separator */}
-        <View style={styles.separator} />
-        
-        {/* Motivational Section */}
-        <View style={styles.motivationCard}>
-          <Ionicons name="school" size={48} color={colors.primary} style={{marginBottom: spacing.md}} />
-          <Text style={styles.motivationTitle}>Ready to Excel?</Text>
-          <Text style={styles.motivationText}>
-            Access your academic resources, connect with faculty, and stay updated with campus events. 
-            Your journey to success starts here!
-          </Text>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Academic Semesters</Text>
-          <Text style={styles.sectionSubtitle}>Choose your semester to explore subjects and study materials</Text>
-        </View>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading semesters...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="warning" size={64} color={colors.error} style={{marginBottom: spacing.lg}} />
-            <Text style={styles.errorTitle}>Error Loading Semesters</Text>
-            <Text style={styles.errorMessage}>{error}</Text>
-            <TouchableOpacity 
-              onPress={onRefresh}
-              style={[globalStyles.button, styles.retryButton]}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.buttonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : semesters.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="book" size={64} color={colors.text.secondary} style={{marginBottom: spacing.lg}} />
-            <Text style={styles.emptyTitle}>No Semesters Found</Text>
-            <Text style={styles.emptyMessage}>
-              It looks like there are no semesters available yet.
-            </Text>
-            <TouchableOpacity 
-              onPress={onRefresh}
-              style={[globalStyles.button, styles.refreshButton]}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.buttonText}>Refresh</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.semesterListContainer}>
-            {semesters.map((item) => (
-              <AnimatedCard 
-                key={item.id}
-                style={styles.semesterCard}
-                animationType="lift"
-              >
-                <TouchableOpacity 
-                  style={styles.semesterMain}
-                  onPress={() => navigation.navigate('SemesterDetails', { semesterId: item.id, semesterName: item.name })}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.cardContent}>
-                    <View style={styles.cardText}>
-                      <Text style={styles.semesterName}>{item.name}</Text>
-                      <Text style={styles.semesterSubtext}>Tap to view details</Text>
-                    </View>
-                    <View style={styles.arrowContainer}>
-                      <Text style={styles.arrow}>→</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-                
-                <AnimatedButton 
-                  style={styles.roadmapButton}
-                  onPress={() => navigation.navigate('SubjectRoadmap', { 
-                    semesterId: item.id, 
-                    semesterName: item.name 
-                  })}
-                  animationType="scale"
-                >
-                  <MaterialIcons name="map" size={16} color={colors.primary} style={{marginRight: 6}} />
-                  <Text style={styles.roadmapButtonText}>Study Roadmap</Text>
-                </AnimatedButton>
-              </AnimatedCard>
-            ))}
+        <Text style={styles.cardTitle}>{title}</Text>
+        {badge && (
+          <View style={[styles.badge, { backgroundColor: color }]}>
+            <Text style={styles.badgeText}>{badge}</Text>
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </BlurView>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => loadSemesters(true)} tintColor={colors.primary} />
+            }
+          >
+            {/* Custom Header */}
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.greetingText}>Welcome back,</Text>
+                <View style={styles.userNameContainer}>
+                   <Text style={styles.userNameText}>{user?.name?.split(' ')[0] || 'Explorer'}</Text>
+                   <MaterialCommunityIcons name="hand-wave" size={rs(28)} color="#fcd34d" style={styles.waveIcon} />
+                </View>
+              </View>
+              <View style={styles.headerActions}>
+                <TouchableOpacity 
+                  style={styles.headerIconBtn}
+                  onPress={() => navigation.navigate('Profile')}
+                >
+                  <BlurView intensity={40} tint="dark" style={styles.iconBlur}>
+                    <Ionicons name="person" size={rs(20)} color={colors.text.white} />
+                  </BlurView>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.headerIconBtn}
+                  onPress={handleLogout}
+                >
+                  <BlurView intensity={40} tint="dark" style={styles.iconBlur}>
+                    <Ionicons name="log-out" size={rs(20)} color={colors.danger} />
+                  </BlurView>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Banner/Status Card */}
+            <TouchableOpacity activeOpacity={0.9} style={styles.bannerContainer}>
+              <LinearGradient
+                colors={[colors.primary, colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.bannerGradient}
+              >
+                <View style={styles.bannerContent}>
+                  <Text style={styles.bannerTitle}>Term Finals Approaching</Text>
+                  <Text style={styles.bannerSubtitle}>Access roadmap and key subjects to stay prepared.</Text>
+                  <View style={styles.bannerBtn}>
+                    <Text style={styles.bannerBtnText}>View Schedule</Text>
+                    <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                  </View>
+                </View>
+                <View style={styles.bannerIconBox}>
+                  <MaterialCommunityIcons name="calendar-clock" size={rs(90)} color="rgba(255,255,255,0.15)" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Quick Access Grid */}
+            <Text style={styles.sectionHeading}>Campus Essentials</Text>
+            <View style={styles.grid}>
+              {renderQuickAccess('Faculty', <FontAwesome5 name="chalkboard-teacher" />, '#60a5fa', () => navigation.navigate('Faculty'), 'Verified')}
+              {renderQuickAccess('Events', <MaterialIcons name="event" />, '#34d399', () => navigation.navigate('Events'), 'New')}
+              {renderQuickAccess('Mess', <MaterialIcons name="restaurant" />, '#fbbf24', () => navigation.navigate('MessDetails'), 'Live')}
+              {renderQuickAccess('College', <MaterialCommunityIcons name="school" />, '#a78bfa', () => navigation.navigate('CollegeDetails'), 'Info')}
+            </View>
+
+            {/* Semesters Section */}
+            <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeading}>Academic Roadmap</Text>
+                <TouchableOpacity onPress={() => loadSemesters(true)}>
+                    <Ionicons name="refresh" size={rs(20)} color={colors.primaryLight} />
+                </TouchableOpacity>
+            </View>
+
+            {loading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={styles.loadingText}>Loading curriculum...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="cloud-offline" size={rs(32)} color={colors.danger} />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={() => loadSemesters()}>
+                    <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.semesterList}>
+                {semesters.map((item, index) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('SemesterDetails', { semesterId: item.id, semesterName: item.name })}
+                  >
+                    <BlurView intensity={25} tint="dark" style={styles.semesterCard}>
+                      <View style={styles.semesterInfo}>
+                        <LinearGradient
+                          colors={[`${colors.primary}40`, `${colors.secondary}40`]}
+                          style={styles.semesterNumberBox}
+                        >
+                          <Text style={styles.semesterNumberText}>{index + 1}</Text>
+                        </LinearGradient>
+                        <View>
+                          <Text style={styles.semesterNameText}>{item.name}</Text>
+                          <Text style={styles.semesterStatusText}>Foundation & Core Subjects</Text>
+                        </View>
+                      </View>
+                      <View style={styles.chevronBox}>
+                        <Ionicons name="chevron-forward" size={rs(18)} color="rgba(255,255,255,0.4)" />
+                      </View>
+                    </BlurView>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.footerSpace} />
+          </ScrollView>
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  maxWidth: {
-    width: '100%',
-    maxWidth: 1100,
-    alignSelf: 'center',
+  mainContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  scrollContainer: {
+  safeArea: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xxl,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
+    paddingBottom: rs(100),
   },
-  container: {
-    flex: 1,
-  },
-  headerContainer: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
-    marginBottom: spacing.lg,
-  },
-  topBar: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: rs(30),
+    marginTop: rs(10),
   },
-  topBarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.shadow.medium,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  profileIcon: {
-    fontSize: 20,
-    color: colors.text.white,
-  },
-  logoContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoIcon: {
-    fontSize: 24,
-  },
-  logoutButton: {
-    backgroundColor: colors.error,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    marginLeft: spacing.sm,
-  },
-  logoutText: {
-    color: colors.text.white,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  header: {
-    alignItems: 'center',
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text.white,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '800',
-  },
-  subtitle: {
-    ...typography.h4,
-    color: colors.primaryLight,
-    marginBottom: spacing.xs,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  description: {
-    ...typography.body,
-    color: colors.text.white,
-    textAlign: 'center',
-    opacity: 0.9,
-    lineHeight: 22,
-    marginBottom: spacing.md,
-  },
-  welcomeStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    ...typography.h3,
-    color: colors.text.white,
-    fontWeight: '800',
-    marginBottom: 2,
-  },
-  statLabel: {
-    ...typography.bodySmall,
-    color: colors.primaryLight,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  sectionHeader: {
-    marginBottom: spacing.xl,
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  greetingText: {
+    fontSize: normalize(14),
+    color: colors.text.muted,
     fontWeight: '700',
-    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
-  sectionSubtitle: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xl,
-    marginHorizontal: spacing.lg,
-  },
-  motivationCard: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: 20,
-    padding: spacing.xl,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+  userNameContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: rs(10),
+    marginTop: rs(4),
+  },
+  userNameText: {
+    fontSize: normalize(28),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -1,
+  },
+  waveIcon: {
+    marginTop: rs(2),
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: rs(12),
+  },
+  headerIconBtn: {
+    width: rs(50),
+    height: rs(50),
+    borderRadius: rs(18),
+    overflow: 'hidden',
+  },
+  iconBlur: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  bannerContainer: {
+    marginBottom: rs(40),
+    borderRadius: rs(32),
+    overflow: 'hidden',
+    backgroundColor: colors.glass.background,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  bannerGradient: {
+    flexDirection: 'row',
+    padding: rs(25),
+    minHeight: rs(180),
+    alignItems: 'center',
+  },
+  bannerContent: {
+    flex: 1,
+    zIndex: 2,
+  },
+  bannerTitle: {
+    fontSize: normalize(24),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(10),
+    letterSpacing: -0.8,
+  },
+  bannerSubtitle: {
+    fontSize: normalize(15),
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: rs(25),
+    lineHeight: normalize(22),
+    fontWeight: '500',
+  },
+  bannerBtn: {
+    backgroundColor: colors.text.white,
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(12),
+    borderRadius: rs(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
+    alignSelf: 'flex-start',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
   },
-  motivationIcon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
-  },
-  motivationTitle: {
-    ...typography.h3,
+  bannerBtnText: {
+    fontSize: normalize(14),
+    fontWeight: '900',
     color: colors.primary,
-    fontWeight: '700',
-    marginBottom: spacing.md,
-    textAlign: 'center',
   },
-  motivationText: {
-    ...typography.body,
-    color: colors.text.primary,
-    textAlign: 'center',
-    lineHeight: 22,
-    opacity: 0.9,
+  bannerIconBox: {
+    position: 'absolute',
+    right: rs(-20),
+    bottom: rs(-20),
+    opacity: 0.2,
   },
-  featuresSection: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+  sectionHeading: {
+    fontSize: normalize(22),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(20),
+    letterSpacing: -0.5,
   },
-  featuresTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    textAlign: 'center',
-    fontWeight: '700',
-    marginBottom: spacing.lg,
-  },
-  featuresGrid: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-  },
-  featureItem: {
-    width: '48%',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    shadowColor: colors.shadow.medium,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  featureIcon: {
-    fontSize: 24,
-    marginBottom: spacing.sm,
-  },
-  featureTitle: {
-    ...typography.bodySmall,
-    color: colors.text.primary,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  featureDesc: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  gridContainer: {
-    width: '100%',
-    marginBottom: rs(spacing.xl),
-    paddingHorizontal: rs(spacing.lg),
-  },
-  gridRow: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    marginBottom: rs(spacing.lg),
+    marginBottom: rs(35),
   },
   cardWrapper: {
-    width: isSmallScreen ? '100%' : '48.5%',
-    marginBottom: isSmallScreen ? rs(spacing.md) : 0,
+    width: '48%',
+    marginBottom: rs(16),
   },
   quickAccessCard: {
-    width: '100%',
+    borderRadius: rs(30),
+    padding: rs(22),
     alignItems: 'center',
-    padding: rs(spacing.lg),
-    minHeight: normalize(180),
-    backgroundColor: colors.surface,
-    borderRadius: normalize(20),
-    borderWidth: 2,
-    borderColor: colors.borderLight,
-    shadowColor: colors.shadow.medium,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  iconContainer: {
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(20),
     justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    alignItems: 'center',
+    marginBottom: rs(15),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  quickAccessIcon: {
-    fontSize: 36,
-    marginBottom: spacing.md,
-    textAlign: 'center',
+  cardTitle: {
+    fontSize: normalize(16),
+    fontWeight: '800',
+    color: colors.text.white,
+    letterSpacing: -0.3,
   },
-  quickAccessTitle: {
-    fontSize: 16,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '700',
-    lineHeight: 20,
-    flexShrink: 1,
-  },
-  quickAccessSubtitle: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 16,
-    fontWeight: '500',
-    marginBottom: spacing.md,
-    flexShrink: 1,
-  },
-  // Individual card styles
-  facultyCard: {
-    borderColor: '#3b82f6', // Blue
-    backgroundColor: '#f0f9ff',
-    shadowColor: '#3b82f6',
-    shadowOpacity: 0.3,
-  },
-  eventsCard: {
-    borderColor: '#10b981', // Green
-    backgroundColor: '#f0fdf4',
-    shadowColor: '#10b981',
-    shadowOpacity: 0.3,
-  },
-  collegeCard: {
-    borderColor: '#8b5cf6', // Purple
-    backgroundColor: '#faf5ff',
-    shadowColor: '#8b5cf6',
-    shadowOpacity: 0.3,
-  },
-  messCard: {
-    borderColor: '#f59e0b', // Orange
-    backgroundColor: '#fffbeb',
-    shadowColor: '#f59e0b',
-    shadowOpacity: 0.3,
-  },
-  cardBadge: {
+  badge: {
     position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 12,
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    top: rs(15),
+    right: rs(15),
+    paddingHorizontal: rs(10),
+    paddingVertical: rs(5),
+    borderRadius: rs(10),
   },
   badgeText: {
+    fontSize: normalize(10),
+    fontWeight: '900',
     color: colors.text.white,
-    fontWeight: '700',
-    fontSize: 9,
-    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
-  listContainer: {
-    paddingBottom: spacing.xl,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: rs(20),
   },
-  semesterListContainer: {
-    paddingBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
+  semesterList: {
+    gap: rs(14),
   },
   semesterCard: {
-    marginBottom: spacing.lg,
-    padding: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.borderLight,
-    shadowColor: colors.shadow.medium,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-    marginHorizontal: spacing.sm,
-  },
-  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: rs(20),
+    borderRadius: rs(28),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  cardText: {
-    flex: 1,
-  },
-  semesterName: {
-    ...typography.h4,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    fontWeight: '700',
-  },
-  semesterSubtext: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
-  },
-  arrowContainer: {
-    width: 32,
-    height: 32,
-    backgroundColor: colors.primaryLight,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.md,
-  },
-  arrow: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  errorContainer: {
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
-  },
-  errorTitle: {
-    ...typography.h4,
-    color: colors.error,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  emptyContainer: {
-    paddingVertical: spacing.xxl,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
-  refreshButton: {
-    paddingHorizontal: spacing.xl,
-  },
-  retryButton: {
-    marginTop: spacing.lg,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
-  },
-  errorIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  errorTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  semesterMain: {
-    flex: 1,
-  },
-  roadmapButton: {
+  semesterInfo: {
     flexDirection: 'row',
-    backgroundColor: colors.primaryLight,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 8,
-    marginTop: spacing.sm,
     alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
   },
-  roadmapButtonText: {
-    ...typography.bodySmall,
-    color: colors.primary,
+  semesterNumberBox: {
+    width: rs(52),
+    height: rs(52),
+    borderRadius: rs(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: rs(18),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  semesterNumberText: {
+    fontSize: normalize(22),
+    fontWeight: '900',
+    color: colors.text.white,
+  },
+  semesterNameText: {
+    fontSize: normalize(18),
+    fontWeight: '800',
+    color: colors.text.white,
+    marginBottom: rs(4),
+    letterSpacing: -0.4,
+  },
+  semesterStatusText: {
+    fontSize: normalize(13),
+    color: colors.text.muted,
     fontWeight: '600',
   },
+  chevronBox: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  loadingBox: {
+    padding: rs(80),
+    alignItems: 'center',
+    gap: rs(20),
+  },
+  loadingText: {
+    color: colors.text.muted,
+    fontWeight: '800',
+    fontSize: normalize(15),
+    letterSpacing: 0.5,
+  },
+  errorBox: {
+    padding: rs(40),
+    backgroundColor: 'rgba(239,68,68,0.05)',
+    borderRadius: rs(32),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.15)',
+  },
+  errorText: {
+    color: colors.danger,
+    fontWeight: '800',
+    fontSize: normalize(16),
+    marginVertical: rs(15),
+    textAlign: 'center',
+    lineHeight: normalize(24),
+  },
+  retryBtn: {
+    paddingHorizontal: rs(25),
+    paddingVertical: rs(12),
+    backgroundColor: colors.danger,
+    borderRadius: rs(14),
+    shadowColor: colors.danger,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: normalize(14),
+    textTransform: 'uppercase',
+  },
+  footerSpace: {
+    height: rs(60),
+  }
 });
 
 export default HomeScreen;
