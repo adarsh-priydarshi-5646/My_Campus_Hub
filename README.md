@@ -23,15 +23,18 @@
 ## 🎥 Demo & Highlights
 
 ### Application Walkthrough
-> [Click here to watch the full video demo](YOUR_DRIVE_LINK_HERE)
+> [Click here to watch the full video demo](https://drive.google.com/file/d/1BJ2kaQMza9sYbJsvF4BrAa-VS_6lqLZa/view?usp=sharing)
 
 ### 📸 Screenshots
-| **Home Screen** | **College Details** | **Subject Roadmap** |
-|:---:|:---:|:---:|
-| ![Home](LINK_TO_HOME_SCREENSHOT) | ![College](LINK_TO_COLLEGE_SCREENSHOT) | ![Roadmap](LINK_TO_ROADMAP_SCREENSHOT) |
+
+| | | | |
+|:---:|:---:|:---:|:---:|
+| <img src="assets/screen1.png" width="220" alt="Screen 1" /> | <img src="assets/screen2.png" width="220" alt="Screen 2" /> | <img src="assets/screen3.png" width="220" alt="Screen 3" /> | <img src="assets/screen4.png" width="220" alt="Screen 4" /> |
+| <img src="assets/screen5.png" width="220" alt="Screen 5" /> | <img src="assets/screen7.png" width="220" alt="Screen 7" /> | <img src="assets/screen8.png" width="220" alt="Screen 8" /> | <img src="assets/screen9.png" width="220" alt="Screen 9" /> |
+| <img src="assets/screen10.png" width="220" alt="Screen 10" /> | <img src="assets/screen12.png" width="220" alt="Screen 12" /> | <img src="assets/screen13.png" width="220" alt="Screen 13" /> | <img src="assets/screen14.png" width="220" alt="Screen 14" /> |
+| <img src="assets/screen19.png" width="220" alt="Screen 19" /> | | | |
 
 ---
-
 
 ## 🛠️ Technology Stack
 
