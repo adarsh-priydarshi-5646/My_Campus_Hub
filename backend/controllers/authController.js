@@ -11,7 +11,9 @@ const generateVerificationToken = () => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, idNumber, department } = req.body;
+    const rollNumber = idNumber;
+    const branch = department;
 
     const existingUser = await prisma.user.findUnique({
       where: {
@@ -25,7 +27,7 @@ const register = async (req, res) => {
         .json({ error: "User already exists with this email" });
     }
 
-    // Hash password
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
@@ -33,17 +35,19 @@ const register = async (req, res) => {
         email,
         password: hashedPassword,
         name,
+        rollNumber: rollNumber || null,
+        branch: branch || null,
       },
     });
 
-    // Generate JWT token
+
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    // Create session in database
+
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
     await prisma.session.create({
       data: {
@@ -81,21 +85,20 @@ const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
-    // Check password
+ 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
-    // Generate JWT token
+
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    // Create session in database
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
     await prisma.session.create({
       data: {
         userId: user.id,
@@ -144,7 +147,6 @@ const logout = async (req, res) => {
       return res.status(400).json({ error: "No token provided" });
     }
 
-    // Deactivate the session in database
     await prisma.session.updateMany({
       where: {
         token,
@@ -165,7 +167,6 @@ const logoutAll = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Deactivate all sessions for this user
     await prisma.session.updateMany({
       where: {
         userId,
@@ -187,7 +188,6 @@ const updateProfile = async (req, res) => {
     const userId = req.user.userId;
     const { name, email, rollNumber, branch, semester, section, skills, achievements, profileImage } = req.body;
 
-    // Check if email is being changed and if it's already taken
     if (email) {
       const existingUser = await prisma.user.findFirst({
         where: {
@@ -203,7 +203,6 @@ const updateProfile = async (req, res) => {
       }
     }
 
-    // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -231,7 +230,6 @@ const updateProfile = async (req, res) => {
       },
     });
 
-    // Parse JSON fields
     const user = {
       ...updatedUser,
       skills: updatedUser.skills ? JSON.parse(updatedUser.skills) : [],
@@ -259,11 +257,9 @@ const forgotPassword = async (req, res) => {
       return res.status(404).json({ error: "User not found with this email" });
     }
 
-    // Generate reset token
     const resetToken = generateVerificationToken();
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-    // Save reset token to user (you'll need to add these fields to schema)
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -272,13 +268,8 @@ const forgotPassword = async (req, res) => {
       },
     });
 
-    // TODO: Send email with reset link
-    // const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    // await sendEmail(user.email, 'Password Reset', resetLink);
-
     res.json({ 
       message: "Password reset link sent to your email",
-      // For development only - remove in production
       resetToken: __DEV__ ? resetToken : undefined 
     });
   } catch (error) {
@@ -303,10 +294,8 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ error: "Invalid or expired reset token" });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update password and clear reset token
     await prisma.user.update({
       where: { id: user.id },
       data: {

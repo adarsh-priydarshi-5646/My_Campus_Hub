@@ -3,36 +3,30 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
 export const colors = {
-  primary: '#2563eb',
-  primaryDark: '#1d4ed8',
-  primaryLight: '#93c5fd',
-  secondary: '#7c3aed',
-  success: '#16a34a',
-  warning: '#f59e0b',
-  danger: '#dc2626',
-  error: '#dc2626',
-  info: '#0ea5e9',
-  background: '#ffffff',
-  surface: '#ffffff',
-  surfaceSecondary: '#f5f5f5',
+  primary: '#6366f1', // Indigo 500
+  primaryDark: '#4f46e5', // Indigo 600
+  primaryLight: '#818cf8', // Indigo 400
+  secondary: '#a855f7', // Purple 500
+  accent: '#ec4899', // Pink 500
+  success: '#10b981', // Emerald 500
+  warning: '#f59e0b', // Amber 500
+  danger: '#ef4444', // Red 500
+  background: '#0f172a', // Slate 900
+  surface: 'rgba(30, 41, 59, 0.7)', // Slate 800 with opacity
+  surfaceLight: 'rgba(51, 65, 85, 0.5)', // Slate 700 with opacity
   text: {
-    primary: '#1f2937',
-    secondary: '#6b7280',
-    light: '#9ca3af',
+    primary: '#f8fafc', // Slate 50
+    secondary: '#94a3b8', // Slate 400
+    muted: '#64748b', // Slate 500
     white: '#ffffff',
   },
-  border: '#e5e7eb',
-  borderLight: '#f3f4f6',
-  gradient: {
-    primary: ['#2563eb', '#7c3aed'],
-    secondary: ['#ffffff', '#f5f5f5'],
-    card: ['#ffffff', '#f9fafb'],
-  },
-  shadow: {
-    light: '#00000010',
-    medium: '#00000020',
-    dark: '#00000030',
-  },
+  border: 'rgba(255, 255, 255, 0.1)',
+  borderLight: 'rgba(255, 255, 255, 0.05)',
+  glass: {
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: 'rgba(255, 255, 255, 0.1)',
+    highlight: 'rgba(255, 255, 255, 0.05)',
+  }
 };
 
 export const spacing = {
@@ -47,68 +41,41 @@ export const spacing = {
 export const typography = {
   h1: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '900',
     lineHeight: 40,
     letterSpacing: -0.5,
   },
   h2: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     lineHeight: 36,
-    letterSpacing: -0.3,
   },
   h3: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 32,
-    letterSpacing: -0.2,
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 30,
   },
   h4: {
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 28,
-    letterSpacing: -0.1,
-  },
-  h5: {
     fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 24,
+    fontWeight: '700',
+    lineHeight: 26,
   },
   body: {
     fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 26,
-    letterSpacing: 0.1,
-  },
-  bodyMedium: {
-    fontSize: 15,
     fontWeight: '500',
     lineHeight: 24,
   },
   bodySmall: {
     fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 22,
-    letterSpacing: 0.1,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   caption: {
     fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 18,
-    letterSpacing: 0.2,
-  },
-  button: {
-    fontSize: 16,
     fontWeight: '600',
-    lineHeight: 24,
-    letterSpacing: 0.3,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-    letterSpacing: 0.2,
-  },
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  }
 };
 
 export const globalStyles = StyleSheet.create({
@@ -128,31 +95,23 @@ export const globalStyles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: spacing.lg,
     marginVertical: spacing.sm,
-    shadowColor: colors.shadow.medium,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 6,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    transform: [{ scale: 1 }],
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  cardHover: {
-    shadowColor: colors.shadow.dark,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 8,
-    transform: [{ scale: 1.02 }],
+  glassCard: {
+    backgroundColor: colors.glass.background,
+    borderRadius: 24,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
   },
   button: {
     backgroundColor: colors.primary,
@@ -161,42 +120,23 @@ export const globalStyles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 56,
     shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-    transform: [{ scale: 1 }],
-  },
-  buttonHover: {
-    backgroundColor: colors.primaryDark,
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-    transform: [{ scale: 1.05 }],
   },
   buttonSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  buttonSecondaryHover: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryDark,
-    shadowOpacity: 0.3,
-    transform: [{ scale: 1.03 }],
+    backgroundColor: colors.surfaceLight,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   buttonText: {
     color: colors.text.white,
@@ -204,44 +144,33 @@ export const globalStyles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  buttonTextSecondary: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
+    color: colors.text.primary,
     fontSize: 16,
-    minHeight: 48,
-  },
-  inputFocused: {
-    borderColor: colors.primary,
-    borderWidth: 2,
+    minHeight: 56,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.secondary,
     marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
   header: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
   },
-  headerText: {
+  headerTitle: {
     color: colors.text.white,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  headerSubtext: {
-    color: colors.primaryLight,
-    fontSize: 16,
-    marginTop: spacing.xs,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   loadingContainer: {
     flex: 1,
@@ -256,13 +185,6 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xxl,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -273,42 +195,11 @@ export const globalStyles = StyleSheet.create({
   flex1: {
     flex: 1,
   },
-  textCenter: {
-    textAlign: 'center',
-  },
-  mb: {
-    marginBottom: spacing.md,
-  },
-  mbLg: {
-    marginBottom: spacing.lg,
-  },
-  mbXl: {
-    marginBottom: spacing.xl,
-  },
-  mt: {
-    marginTop: spacing.md,
-  },
-  mtLg: {
-    marginTop: spacing.lg,
-  },
-  p: {
-    padding: spacing.md,
-  },
-  pLg: {
-    padding: spacing.lg,
-  },
-  px: {
-    paddingHorizontal: spacing.md,
-  },
-  pxLg: {
-    paddingHorizontal: spacing.lg,
-  },
-  py: {
-    paddingVertical: spacing.md,
-  },
-  pyLg: {
-    paddingVertical: spacing.lg,
-  },
+  mb: { marginBottom: spacing.md },
+  mbLg: { marginBottom: spacing.lg },
+  mt: { marginTop: spacing.md },
+  px: { paddingHorizontal: spacing.md },
+  py: { paddingVertical: spacing.md },
 });
 
 // Screen dimensions and breakpoints

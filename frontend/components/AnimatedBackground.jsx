@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../styles/globalStyles';
 
 const { width, height } = Dimensions.get('window');
@@ -35,10 +36,7 @@ const AnimatedBackground = ({
     switch (variant) {
       case 'gradient':
         return {
-          backgroundColor: animatedValue.interpolate({
-            inputRange: [0, 1],
-            outputRange: [colors.primary, colors.secondary],
-          }),
+          backgroundColor: '#0f172a', // Static dark slate background
         };
       case 'wave':
         return {
@@ -62,10 +60,22 @@ const AnimatedBackground = ({
     );
   }
 
+  if (variant === 'gradient') {
+    return (
+      <View style={[styles.container, { backgroundColor: '#0f172a' }, style]}>
+        <LinearGradient
+          colors={['#0f172a', '#1e293b', '#0f172a']}
+          style={StyleSheet.absoluteFill}
+        />
+        {children}
+      </View>
+    );
+  }
+
   return (
-    <Animated.View style={[styles.container, getBackgroundStyle(), style]}>
+    <View style={[styles.container, getBackgroundStyle(), style]}>
       {children}
-    </Animated.View>
+    </View>
   );
 };
 

@@ -113,8 +113,10 @@ model mess {
   day       String?
   breakfast String? @db.Text
   lunch     String? @db.Text
+  snacks    String? @db.Text
   dinner    String? @db.Text
   menu      String? @db.Text
+  timing    String? @default("7:00 AM - 9:30 PM")
 }
 
 model event {
@@ -130,7 +132,12 @@ model event {
 }
 
 model college {
-  id   Int     @id @default(autoincrement())
-  name String?
-  info String? @db.Text
+  id          Int     @id @default(autoincrement())
+  name        String?
+  tagline     String?
+  location    String?
+  about       String? @db.Text
+  stats       Json?   // Array of {label, value, icon}
+  facilities  Json?   // Array of {name, icon}
+  contactInfo Json?   // {phone, email, website}
 }

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
@@ -11,1196 +10,604 @@ import {
   Switch,
   Modal,
   TextInput,
-  Image
+  Image,
+  Dimensions
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { globalStyles, colors, typography, spacing, isSmallScreen } from '../styles/globalStyles';
+import { colors, spacing, typography } from '../styles/globalStyles';
 import { normalize, rs } from '../utils/responsive';
 import BackButton from '../components/BackButton';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedBackground from '../components/AnimatedBackground';
+
+const { width } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout, updateUser } = useAuth();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showSkillsModal, setShowSkillsModal] = useState(false);
-  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
-  const [editRollNumber, setEditRollNumber] = useState('NST2021CS001');
-  const [editBranch, setEditBranch] = useState('Computer Science & Engineering');
-  const [editSemester, setEditSemester] = useState('6th Semester');
-  const [editSection, setEditSection] = useState('A');
-  
-  const [skills, setSkills] = useState([
-    'React Native', 'JavaScript', 'Python', 'Java',
-    'Node.js', 'MongoDB', 'Git', 'Problem Solving'
-  ]);
-  const [newSkill, setNewSkill] = useState('');
-  
-  const [achievements, setAchievements] = useState([
-    { id: 1, title: 'Best Project Award', year: '2023', icon: 'trophy' },
-    { id: 2, title: 'Hackathon Winner', year: '2023', icon: 'code' },
-    { id: 3, title: 'Academic Excellence', year: '2022', icon: 'school' },
-    { id: 4, title: 'Sports Champion', year: '2022', icon: 'medal' }
-  ]);
-  const [newAchievement, setNewAchievement] = useState({ title: '', year: '', icon: 'trophy' });
+  const [editRollNumber, setEditRollNumber] = useState(user?.rollNumber || 'NST2021CS001');
+  const [editBranch, setEditBranch] = useState(user?.branch || 'Computer Science & Engineering');
 
-  const studentProfile = {
-    name: user?.name || 'Student Name',
-    email: user?.email || 'student@newtontech.edu.in',
-    rollNumber: 'NST2021CS001',
-    branch: 'Computer Science & Engineering',
-    semester: '6th Semester',
-    batch: '2021-2025',
-    section: 'A',
-    
-    academic: {
-      cgpa: '8.5',
-      attendance: '92%',
-      creditsCompleted: 140,
-      totalCredits: 180,
-      rank: 12,
-      totalStudents: 240
-    },
-    
-    achievements: [
-      { title: 'Best Project Award', year: '2023', icon: 'trophy' },
-      { title: 'Hackathon Winner', year: '2023', icon: 'code' },
-      { title: 'Academic Excellence', year: '2022', icon: 'school' },
-      { title: 'Sports Champion', year: '2022', icon: 'medal' }
-    ],
-    
-    skills: [
-      'React Native', 'JavaScript', 'Python', 'Java',
-      'Node.js', 'MongoDB', 'Git', 'Problem Solving'
-    ],
-    
-    activities: [
-      { name: 'Tech Club', role: 'Member', icon: 'laptop' },
-      { name: 'Sports Team', role: 'Player', icon: 'football' },
-      { name: 'Cultural Committee', role: 'Volunteer', icon: 'musical-notes' }
-    ]
-  };
-  
   useEffect(() => {
     setEditName(user?.name || '');
     setEditEmail(user?.email || '');
-    requestImagePermissions();
   }, [user]);
 
-  const requestImagePermissions = async () => {
+  const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please allow access to your photos to upload profile picture.');
+      Alert.alert('Permission Required', 'Allow access to photos to change avatar.');
+      return;
     }
-  };
 
-  const compressImage = async (uri) => {
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const sizeInMB = blob.size / (1024 * 1024);
-      
-      if (sizeInMB > 5) {
-        Alert.alert('Image Too Large', 'Please select an image smaller than 5MB');
-        return null;
-      }
-      
-      return uri;
-    } catch (error) {
-      if (__DEV__) console.error('Error checking image size:', error);
-      return uri;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
     }
-  };
-
-  const handlePickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-      });
-
-      if (!result.canceled) {
-        const compressedUri = await compressImage(result.assets[0].uri);
-        if (compressedUri) {
-          setProfileImage(compressedUri);
-          Alert.alert('Success', 'Profile picture updated!');
-        }
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow camera access to take a photo.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-      });
-
-      if (!result.canceled) {
-        const compressedUri = await compressImage(result.assets[0].uri);
-        if (compressedUri) {
-          setProfileImage(compressedUri);
-          Alert.alert('Success', 'Profile picture updated!');
-        }
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
-    }
-  };
-
-  const handleImageUpload = () => {
-    Alert.alert(
-      'Upload Photo',
-      'Choose an option',
-      [
-        { text: 'Take Photo', onPress: handleTakePhoto },
-        { text: 'Choose from Library', onPress: handlePickImage },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              const success = await logout();
-              if (success) {
-                if (__DEV__) console.log('ProfileScreen: Logout successful');
-              } else {
-                Alert.alert('Error', 'Failed to logout. Please try again.');
-              }
-            } catch (error) {
-              if (__DEV__) console.error('ProfileScreen: Logout error:', error);
-              Alert.alert('Error', 'An error occurred during logout.');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleEditProfile = () => {
-    setEditName(user?.name || '');
-    setEditEmail(user?.email || '');
-    setEditRollNumber(editRollNumber);
-    setEditBranch(editBranch);
-    setEditSemester(editSemester);
-    setEditSection(editSection);
-    setShowEditModal(true);
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign Out", style: "destructive", onPress: logout }
+    ]);
   };
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+      Alert.alert('Error', 'Name is required');
       return;
     }
-    if (!editEmail.trim()) {
-      Alert.alert('Error', 'Email cannot be empty');
-      return;
-    }
-
+    
     try {
-      const profileData = {
+      const result = await updateUser({
         name: editName.trim(),
         email: editEmail.trim(),
         rollNumber: editRollNumber,
-        branch: editBranch,
-        semester: editSemester,
-        section: editSection,
-        skills,
-        achievements,
-        profileImage,
-      };
-
-      const result = await updateUser(profileData);
+        branch: editBranch
+      });
       
       if (result.success) {
-        Alert.alert('Success', 'Profile updated successfully in database!');
+        Alert.alert('Success', 'Profile updated');
         setShowEditModal(false);
       } else {
-        Alert.alert('Error', result.error || 'Failed to update profile');
+        Alert.alert('Error', result.error || 'Failed to update');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert('Error', 'Something went wrong');
     }
   };
 
-  const handleAddSkill = () => {
-    if (newSkill.trim()) {
-      setSkills([...skills, newSkill.trim()]);
-      setNewSkill('');
-    }
-  };
-
-  const handleRemoveSkill = (index) => {
-    Alert.alert(
-      'Remove Skill',
-      'Are you sure you want to remove this skill?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: () => {
-            const updatedSkills = skills.filter((_, i) => i !== index);
-            setSkills(updatedSkills);
-          }
-        }
-      ]
-    );
-  };
-
-  const handleAddAchievement = () => {
-    if (newAchievement.title.trim() && newAchievement.year.trim()) {
-      const achievement = {
-        id: achievements.length + 1,
-        ...newAchievement
-      };
-      setAchievements([...achievements, achievement]);
-      setNewAchievement({ title: '', year: '', icon: 'trophy' });
-      setShowAchievementsModal(false);
-      Alert.alert('Success', 'Achievement added!');
-    } else {
-      Alert.alert('Error', 'Please fill all fields');
-    }
-  };
-
-  const handleRemoveAchievement = (id) => {
-    Alert.alert(
-      'Remove Achievement',
-      'Are you sure you want to remove this achievement?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: () => {
-            const updatedAchievements = achievements.filter(a => a.id !== id);
-            setAchievements(updatedAchievements);
-          }
-        }
-      ]
-    );
-  };
+  const renderStat = (label, value, icon, color) => (
+    <View style={styles.statItem}>
+       <View style={[styles.statIconBox, { backgroundColor: `${color}15` }]}>
+          <Feather name={icon} size={rs(18)} color={color} />
+       </View>
+       <View>
+          <Text style={styles.statVal}>{value}</Text>
+          <Text style={styles.statLbl}>{label}</Text>
+       </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <ScrollView 
-        style={globalStyles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <BackButton 
-          onPress={() => navigation.navigate('Home')} 
-          title="Back to Home"
-        />
-
-        {/* Profile Header with Gradient */}
-        <LinearGradient
-          colors={[colors.primary, '#8b5cf6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.profileHeader}
-        >
-          <View style={styles.avatarContainer}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {(editName || studentProfile.name).charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity 
-              style={styles.editAvatarButton}
-              onPress={handleImageUpload}
-            >
-              <Ionicons name="camera" size={16} color={colors.text.white} />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.headerTitle}>Account Settings</Text>
+            <TouchableOpacity onPress={() => setShowEditModal(true)} style={styles.editBtn}>
+               <BlurView intensity={40} tint="dark" style={styles.iconBlur}>
+                  <Feather name="edit-3" size={rs(18)} color="#fff" />
+               </BlurView>
             </TouchableOpacity>
           </View>
-          
-          <Text style={styles.userName}>{studentProfile.name}</Text>
-          <Text style={styles.userEmail}>{studentProfile.email}</Text>
-          <Text style={styles.rollNumber}>{studentProfile.rollNumber}</Text>
-          
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <Ionicons name="school" size={14} color={colors.primary} />
-              <Text style={styles.badgeText}>Student</Text>
-            </View>
-            <View style={[styles.badge, styles.activeBadge]}>
-              <Ionicons name="checkmark-circle" size={14} color={colors.text.white} />
-              <Text style={[styles.badgeText, { color: colors.text.white }]}>Active</Text>
-            </View>
-          </View>
-        </LinearGradient>
 
-        {/* Academic Info Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <FontAwesome5 name="graduation-cap" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Academic Information</Text>
-          </View>
-          
-          {/* Row 1: Branch & Batch */}
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Branch</Text>
-              <Text style={styles.infoValue}>{studentProfile.branch}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Batch</Text>
-              <Text style={styles.infoValue}>{studentProfile.batch}</Text>
-            </View>
-          </View>
-          
-          {/* Row 2: Semester & Section */}
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Semester</Text>
-              <Text style={styles.infoValue}>{studentProfile.semester}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Section</Text>
-              <Text style={styles.infoValue}>{studentProfile.section}</Text>
-            </View>
-          </View>
-        </View>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Profile Hero */}
+            <View style={styles.profileHero}>
+               <TouchableOpacity onPress={handlePickImage} activeOpacity={0.9} style={styles.avatarContainer}>
+                  <View style={styles.avatarOuterRing}>
+                    {profileImage || user?.avatar ? (
+                      <Image source={{ uri: profileImage || user.avatar }} style={styles.avatarImg} />
+                    ) : (
+                      <LinearGradient colors={[colors.primary, colors.secondary]} style={styles.avatarPlaceholder}>
+                         <Text style={styles.avatarTxt}>{(user?.name || 'U').charAt(0)}</Text>
+                      </LinearGradient>
+                    )}
+                  </View>
+                  <View style={styles.cameraIcon}>
+                     <Ionicons name="camera" size={rs(14)} color="#fff" />
+                  </View>
+               </TouchableOpacity>
 
-        {/* Performance Stats */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="analytics" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Academic Performance</Text>
-          </View>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
-                <MaterialIcons name="grade" size={28} color="#3b82f6" />
-              </View>
-              <Text style={styles.statValue}>{studentProfile.academic.cgpa}</Text>
-              <Text style={styles.statLabel}>CGPA</Text>
+               <Text style={styles.userName}>{user?.name || 'Academic Scholar'}</Text>
+               <Text style={styles.userSub}>{user?.email || 'email@example.com'}</Text>
+               
+               <BlurView intensity={20} tint="dark" style={styles.rollTag}>
+                  <Text style={styles.rollText}>{user?.rollNumber || editRollNumber}</Text>
+               </BlurView>
             </View>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: '#d1fae5' }]}>
-                <Ionicons name="calendar" size={28} color="#10b981" />
-              </View>
-              <Text style={styles.statValue}>{studentProfile.academic.attendance}</Text>
-              <Text style={styles.statLabel}>Attendance</Text>
-            </View>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
-                <FontAwesome5 name="trophy" size={24} color="#f59e0b" />
-              </View>
-              <Text style={styles.statValue}>#{studentProfile.academic.rank}</Text>
-              <Text style={styles.statLabel}>Class Rank</Text>
-            </View>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: '#e0e7ff' }]}>
-                <MaterialIcons name="school" size={28} color="#6366f1" />
-              </View>
-              <Text style={styles.statValue}>{studentProfile.academic.creditsCompleted}/{studentProfile.academic.totalCredits}</Text>
-              <Text style={styles.statLabel}>Credits</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Achievements */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="trophy" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Achievements & Awards</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => setShowAchievementsModal(true)}
-            >
-              <Ionicons name="add-circle" size={24} color={colors.primary} />
+            {/* Academic Summary */}
+            <BlurView intensity={25} tint="dark" style={styles.sectionCard}>
+               <Text style={styles.sectionHeading}>Academic Snapshot</Text>
+               <View style={styles.statsGrid}>
+                  {renderStat('GPA', '8.9', 'award', '#fbbf24')}
+                  {renderStat('Attendance', '94%', 'calendar', '#10b981')}
+                  {renderStat('Rank', '#12', 'trending-up', '#3b82f6')}
+                  {renderStat('Credits', '132', 'book', '#a78bfa')}
+               </View>
+            </BlurView>
+
+            {/* Information List */}
+            <View style={styles.infoSection}>
+               <Text style={styles.infoHeading}>Profile Information</Text>
+               
+               <BlurView intensity={15} tint="dark" style={styles.infoItem}>
+                  <View style={styles.infoIconBox}>
+                    <MaterialIcons name="business" size={rs(20)} color={colors.primaryLight} />
+                  </View>
+                  <View style={styles.infoContent}>
+                     <Text style={styles.infoLbl}>Institution Department</Text>
+                     <Text style={styles.infoVal}>{user?.branch || editBranch}</Text>
+                  </View>
+               </BlurView>
+
+               <BlurView intensity={15} tint="dark" style={styles.infoItem}>
+                  <View style={styles.infoIconBox}>
+                    <MaterialIcons name="school" size={rs(20)} color={colors.primaryLight} />
+                  </View>
+                  <View style={styles.infoContent}>
+                     <Text style={styles.infoLbl}>Enrollment Status</Text>
+                     <Text style={styles.infoVal}>6th Semester • Section A</Text>
+                  </View>
+               </BlurView>
+
+               <BlurView intensity={15} tint="dark" style={styles.infoItem}>
+                  <View style={styles.infoIconBox}>
+                    <MaterialIcons name="verified-user" size={rs(20)} color={colors.success} />
+                  </View>
+                  <View style={styles.infoContent}>
+                     <Text style={styles.infoLbl}>Identity Verification</Text>
+                     <Text style={styles.infoVal}>Institutional ID Verified</Text>
+                  </View>
+               </BlurView>
+            </View>
+
+            {/* Actions */}
+            <TouchableOpacity activeOpacity={0.85} style={styles.logoutBtn} onPress={handleLogout}>
+               <LinearGradient 
+                colors={[colors.danger, '#991b1b']} 
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoutGradient}
+               >
+                  <MaterialIcons name="logout" size={rs(20)} color="#fff" />
+                  <Text style={styles.logoutTxt}>Sign Out Account</Text>
+               </LinearGradient>
             </TouchableOpacity>
-          </View>
-          {achievements.map((achievement) => (
-            <View key={achievement.id} style={styles.achievementItem}>
-              <View style={styles.achievementIcon}>
-                <Ionicons name={achievement.icon} size={20} color={colors.warning} />
-              </View>
-              <View style={styles.achievementContent}>
-                <Text style={styles.achievementTitle}>{achievement.title}</Text>
-                <Text style={styles.achievementYear}>{achievement.year}</Text>
-              </View>
-              <TouchableOpacity onPress={() => handleRemoveAchievement(achievement.id)}>
-                <Ionicons name="close-circle" size={20} color={colors.error} />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
 
-        {/* Skills */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="code" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Skills & Technologies</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => setShowSkillsModal(true)}
-            >
-              <Ionicons name="add-circle" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.skillsContainer}>
-            {skills.map((skill, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.skillChip}
-                onLongPress={() => handleRemoveSkill(index)}
-              >
-                <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                <Text style={styles.skillText}>{skill}</Text>
-                <TouchableOpacity onPress={() => handleRemoveSkill(index)}>
-                  <Ionicons name="close" size={14} color={colors.text.secondary} style={{marginLeft: 4}} />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+            <Text style={styles.footerTxt}>MyCampusHub Professional v2.0 • Build OS-12</Text>
+            
+            <View style={{ height: rs(60) }} />
+          </ScrollView>
+        </SafeAreaView>
+      </AnimatedBackground>
 
-        {/* Activities */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="groups" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Extra-Curricular Activities</Text>
-          </View>
-          {studentProfile.activities.map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name={activity.icon} size={20} color={colors.primary} />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityName}>{activity.name}</Text>
-                <Text style={styles.activityRole}>{activity.role}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+      {/* Edit Modal */}
+      <Modal visible={showEditModal} animationType="slide" transparent>
+         <View style={styles.modalOverlay}>
+            <BlurView intensity={100} tint="dark" style={styles.modalContent}>
+               <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Refine Profile</Text>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => setShowEditModal(false)} style={styles.closeBtn}>
+                     <Ionicons name="close" size={rs(24)} color="#fff" />
+                  </TouchableOpacity>
+               </View>
 
-        {/* Settings */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="settings" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Settings & Preferences</Text>
-          </View>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="notifications" size={20} color={colors.primary} />
-              <Text style={styles.settingText}>Notifications</Text>
-            </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={notificationsEnabled ? colors.primary : colors.text.light}
-            />
-          </View>
+               <ScrollView showsVerticalScrollIndicator={false} style={styles.modalBody}>
+                  <View style={styles.inputBox}>
+                     <Text style={styles.inputLbl}>Full Name</Text>
+                     <TextInput 
+                        style={styles.input} 
+                        value={editName} 
+                        onChangeText={setEditName}
+                        placeholder="Ex: John Doe"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                     />
+                  </View>
 
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="moon" size={20} color={colors.primary} />
-              <Text style={styles.settingText}>Dark Mode</Text>
-            </View>
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={darkModeEnabled ? colors.primary : colors.text.light}
-            />
-          </View>
-        </View>
+                  <View style={styles.inputBox}>
+                     <Text style={styles.inputLbl}>Email Address (Read-only)</Text>
+                     <TextInput 
+                        style={[styles.input, { opacity: 0.5, backgroundColor: 'rgba(255,255,255,0.02)' }]} 
+                        value={editEmail} 
+                        editable={false}
+                     />
+                  </View>
+                  
+                  <View style={styles.inputBox}>
+                     <Text style={styles.inputLbl}>Institutional Roll Number</Text>
+                     <TextInput 
+                        style={styles.input} 
+                        value={editRollNumber} 
+                        onChangeText={setEditRollNumber}
+                        placeholder="Ex: NST-21-XXX"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                     />
+                  </View>
 
-        {/* Quick Actions */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <MaterialIcons name="dashboard" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Quick Actions</Text>
-          </View>
-          
-          <TouchableOpacity style={styles.actionButton} onPress={handleEditProfile}>
-            <Ionicons name="person" size={20} color={colors.primary} />
-            <Text style={styles.actionText}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
+                  <View style={styles.inputBox}>
+                     <Text style={styles.inputLbl}>Academic Branch</Text>
+                     <TextInput 
+                        style={styles.input} 
+                        value={editBranch} 
+                        onChangeText={setEditBranch}
+                        placeholder="Ex: CSE"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                     />
+                  </View>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="document-text" size={20} color={colors.primary} />
-            <Text style={styles.actionText}>View Marksheet</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <MaterialIcons name="payment" size={20} color={colors.primary} />
-            <Text style={styles.actionText}>Fee Payment</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="help-circle" size={20} color={colors.primary} />
-            <Text style={styles.actionText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="log-out" size={20} color={colors.text.white} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>MyCampusHub v1.0.0</Text>
-          <Text style={styles.appCopyright}>© 2024 Newton School of Technology</Text>
-        </View>
-      </ScrollView>
-
-      {/* Edit Profile Modal */}
-      <Modal
-        visible={showEditModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editName}
-                  onChangeText={setEditName}
-                  placeholder="Enter your name"
-                  placeholderTextColor={colors.text.light}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editEmail}
-                  onChangeText={setEditEmail}
-                  placeholder="Enter your email"
-                  placeholderTextColor={colors.text.light}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Roll Number</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editRollNumber}
-                  onChangeText={setEditRollNumber}
-                  placeholder="Enter roll number"
-                  placeholderTextColor={colors.text.light}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Branch</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editBranch}
-                  onChangeText={setEditBranch}
-                  placeholder="Enter branch"
-                  placeholderTextColor={colors.text.light}
-                />
-              </View>
-
-              <TouchableOpacity 
-                style={styles.saveButton}
-                onPress={handleSaveProfile}
-              >
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
+                  <TouchableOpacity activeOpacity={0.9} style={styles.saveBtn} onPress={handleSaveProfile}>
+                     <LinearGradient
+                        colors={[colors.primary, colors.secondary]}
+                        style={styles.saveGradient}
+                     >
+                        <Text style={styles.saveBtnTxt}>Preserve Changes</Text>
+                     </LinearGradient>
+                  </TouchableOpacity>
+                  
+                  <View style={{ height: rs(40) }} />
+               </ScrollView>
+            </BlurView>
+         </View>
       </Modal>
-
-      {/* Add Skills Modal */}
-      <Modal
-        visible={showSkillsModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSkillsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Skill</Text>
-              <TouchableOpacity onPress={() => setShowSkillsModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Skill Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newSkill}
-                  onChangeText={setNewSkill}
-                  placeholder="e.g., React Native, Python"
-                  placeholderTextColor={colors.text.light}
-                  onSubmitEditing={handleAddSkill}
-                />
-              </View>
-
-              <TouchableOpacity 
-                style={styles.saveButton}
-                onPress={() => {
-                  handleAddSkill();
-                  setShowSkillsModal(false);
-                }}
-              >
-                <Ionicons name="add" size={20} color={colors.text.white} style={{marginRight: 8}} />
-                <Text style={styles.saveButtonText}>Add Skill</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Achievement Modal */}
-      <Modal
-        visible={showAchievementsModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAchievementsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Achievement</Text>
-              <TouchableOpacity onPress={() => setShowAchievementsModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Achievement Title</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newAchievement.title}
-                  onChangeText={(text) => setNewAchievement({...newAchievement, title: text})}
-                  placeholder="e.g., Best Project Award"
-                  placeholderTextColor={colors.text.light}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Year</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newAchievement.year}
-                  onChangeText={(text) => setNewAchievement({...newAchievement, year: text})}
-                  placeholder="e.g., 2023"
-                  placeholderTextColor={colors.text.light}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Icon</Text>
-                <View style={styles.iconSelector}>
-                  {['trophy', 'medal', 'star', 'ribbon', 'code', 'school'].map((iconName) => (
-                    <TouchableOpacity
-                      key={iconName}
-                      style={[
-                        styles.iconOption,
-                        newAchievement.icon === iconName && styles.iconOptionSelected
-                      ]}
-                      onPress={() => setNewAchievement({...newAchievement, icon: iconName})}
-                    >
-                      <Ionicons name={iconName} size={24} color={newAchievement.icon === iconName ? colors.primary : colors.text.secondary} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <TouchableOpacity 
-                style={styles.saveButton}
-                onPress={handleAddAchievement}
-              >
-                <Ionicons name="add" size={20} color={colors.text.white} style={{marginRight: 8}} />
-                <Text style={styles.saveButtonText}>Add Achievement</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: spacing.xxl,
-    padding: spacing.md,
+  mainContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  profileHeader: {
+  safeArea: {
+    flex: 1,
+  },
+  topNav: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.xl,
-    borderRadius: 24,
-    marginBottom: spacing.xl,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
+  },
+  headerTitle: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
+  editBtn: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(14),
+    overflow: 'hidden',
+  },
+  iconBlur: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  scrollContent: {
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
+  },
+  profileHero: {
+    alignItems: 'center',
+    marginVertical: rs(30),
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: spacing.md,
+    marginBottom: rs(20),
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.text.white,
+  avatarOuterRing: {
+    width: rs(120),
+    height: rs(120),
+    borderRadius: rs(40),
+    borderWidth: 1,
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.3)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: colors.glass.background,
+    padding: rs(6),
   },
-  avatarText: {
-    ...typography.h1,
-    color: colors.primary,
-    fontWeight: '800',
-    fontSize: 42,
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: rs(34),
   },
-  avatarImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.3)',
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: rs(34),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  editAvatarButton: {
+  avatarTxt: {
+    fontSize: normalize(44),
+    fontWeight: '900',
+    color: '#fff',
+  },
+  cameraIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    bottom: rs(-4),
+    right: rs(-4),
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(12),
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: colors.text.white,
+    borderColor: colors.background,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
   },
   userName: {
-    ...typography.h2,
+    fontSize: normalize(24),
+    fontWeight: '900',
     color: colors.text.white,
-    fontWeight: '800',
-    marginBottom: spacing.xs / 2,
+    marginBottom: rs(4),
+    letterSpacing: -0.5,
   },
-  userEmail: {
-    ...typography.body,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: spacing.xs / 2,
-  },
-  rollNumber: {
-    ...typography.body,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '600',
-    marginBottom: spacing.md,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.text.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    gap: 4,
-  },
-  activeBadge: {
-    backgroundColor: colors.success,
-  },
-  badgeText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.h3,
-    color: colors.primary,
-    fontWeight: '700',
-    flex: 1,
-  },
-  addButton: {
-    padding: spacing.xs,
-  },
-  infoRow: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    marginBottom: rs(spacing.md),
-  },
-  infoItem: {
-    width: isSmallScreen ? '100%' : '48.5%',
-    backgroundColor: colors.background,
-    padding: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: isSmallScreen ? rs(spacing.sm) : 0,
-  },
-  infoLabel: {
-    ...typography.bodySmall,
+  userSub: {
+    fontSize: normalize(14),
     color: colors.text.secondary,
     fontWeight: '600',
-    marginBottom: spacing.xs / 2,
+    marginBottom: rs(20),
   },
-  infoValue: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '700',
+  rollTag: {
+    paddingHorizontal: rs(18),
+    paddingVertical: rs(8),
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
+    overflow: 'hidden',
+  },
+  rollText: {
+    fontSize: normalize(13),
+    fontWeight: '900',
+    color: colors.primaryLight,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  sectionCard: {
+    borderRadius: rs(28),
+    padding: rs(24),
+    marginBottom: rs(30),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
+  },
+  sectionHeading: {
+    fontSize: normalize(16),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(20),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statsGrid: {
-    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: rs(20),
   },
-  statCard: {
-    width: isSmallScreen ? '48%' : '48.5%',
-    backgroundColor: colors.background,
-    padding: rs(spacing.md),
-    borderRadius: normalize(16),
+  statItem: {
+    width: (width - rs(108)) / 2,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: rs(spacing.md),
+    gap: rs(12),
   },
-  statIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  statIconBox: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(12),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
   },
-  statValue: {
-    ...typography.h3,
-    color: colors.primary,
+  statVal: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+  },
+  statLbl: {
+    fontSize: normalize(10),
+    color: colors.text.secondary,
     fontWeight: '800',
-    marginBottom: spacing.xs / 2,
+    textTransform: 'uppercase',
   },
-  statLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
-    textAlign: 'center',
+  infoSection: {
+    marginBottom: rs(30),
   },
-  achievementItem: {
+  infoHeading: {
+    fontSize: normalize(20),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(15),
+    letterSpacing: -0.5,
+  },
+  infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  achievementIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fef3c7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  achievementContent: {
-    flex: 1,
-  },
-  achievementTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  achievementYear: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  skillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  skillChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
+    padding: rs(18),
+    borderRadius: rs(24),
+    marginBottom: rs(12),
+    gap: rs(15),
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 4,
+    backgroundColor: colors.glass.background,
   },
-  skillText: {
-    ...typography.bodySmall,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  activityIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primaryLight,
+  infoIconBox: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(255,255,255,0.03)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
   },
-  activityContent: {
+  infoContent: {
     flex: 1,
   },
-  activityName: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    marginBottom: 2,
+  infoLbl: {
+    fontSize: normalize(11),
+    color: colors.text.muted,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: rs(2),
   },
-  activityRole: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
+  infoVal: {
+    fontSize: normalize(16),
+    color: colors.text.white,
+    fontWeight: '700',
   },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  logoutBtn: {
+    marginBottom: rs(40),
+    borderRadius: rs(24),
+    overflow: 'hidden',
   },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  settingText: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  actionButton: {
+  logoutGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  actionText: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    flex: 1,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    backgroundColor: colors.error,
-    padding: spacing.md,
-    borderRadius: 16,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
-    shadowColor: colors.error,
+    paddingVertical: rs(20),
+    gap: rs(10),
+    shadowColor: colors.danger,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 4,
   },
-  logoutText: {
-    ...typography.body,
-    color: colors.text.white,
+  logoutTxt: {
+    fontSize: normalize(16),
+    fontWeight: '900',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  footerTxt: {
+    textAlign: 'center',
+    fontSize: normalize(12),
+    color: colors.text.muted,
     fontWeight: '700',
-  },
-  appInfo: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  appVersion: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
-  },
-  appCopyright: {
-    ...typography.bodySmall,
-    color: colors.text.light,
-    marginTop: spacing.xs / 2,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   modalContent: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    overflow: 'hidden',
+    borderTopLeftRadius: rs(40),
+    borderTopRightRadius: rs(40),
+    padding: rs(30),
+    minHeight: '70%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    marginBottom: rs(30),
   },
   modalTitle: {
-    ...typography.h3,
-    color: colors.primary,
-    fontWeight: '700',
+    fontSize: normalize(24),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
+  closeBtn: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(14),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalBody: {
-    padding: spacing.lg,
+    flex: 1,
   },
-  inputGroup: {
-    marginBottom: spacing.lg,
+  inputBox: {
+    marginBottom: rs(24),
   },
-  inputLabel: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    marginBottom: spacing.sm,
+  inputLbl: {
+    fontSize: normalize(12),
+    fontWeight: '900',
+    color: colors.primaryLight,
+    textTransform: 'uppercase',
+    marginBottom: rs(10),
+    paddingLeft: rs(4),
+    letterSpacing: 0.5,
   },
   input: {
-    ...typography.body,
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: rs(20),
+    padding: rs(18),
+    color: '#fff',
+    fontSize: normalize(16),
+    fontWeight: '700',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.md,
-    color: colors.text.primary,
   },
-  saveButton: {
-    flexDirection: 'row',
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: 12,
+  saveBtn: {
+    borderRadius: rs(20),
+    overflow: 'hidden',
+    marginTop: rs(20),
+  },
+  saveGradient: {
+    paddingVertical: rs(20),
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  saveButtonText: {
-    ...typography.body,
-    color: colors.text.white,
-    fontWeight: '700',
-  },
-  iconSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  iconOption: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  iconOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
+  saveBtnTxt: {
+    color: '#fff',
+    fontSize: normalize(16),
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  }
 });
-
-
 
 export default ProfileScreen;

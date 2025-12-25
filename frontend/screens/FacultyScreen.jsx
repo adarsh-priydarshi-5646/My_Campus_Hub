@@ -4,16 +4,20 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
+  ActivityIndicator
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { fetchFaculty } from '../services/api';
-import { globalStyles, colors, typography, spacing,} from '../styles/globalStyles';
-import { rs } from '../utils/responsive';
+import { globalStyles, colors, spacing, typography } from '../styles/globalStyles';
+import { normalize, rs } from '../utils/responsive';
+import { LinearGradient } from 'expo-linear-gradient';
 import BackButton from '../components/BackButton';
-import AnimatedCard from '../components/AnimatedCard';
+import AnimatedBackground from '../components/AnimatedBackground';
+
 const FacultyScreen = ({ navigation }) => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,11 +28,9 @@ const FacultyScreen = ({ navigation }) => {
       setLoading(true);
       setError(null);
       const res = await fetchFaculty();
-      console.log('Faculty response:', res.data);
       setFaculty(res.data);
     } catch (err) {
-      console.error('Error loading faculty:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load faculty. Please try again.');
+      setError('Failed to sync faculty records');
     } finally {
       setLoading(false);
     }
@@ -38,239 +40,277 @@ const FacultyScreen = ({ navigation }) => {
     loadFaculty();
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading faculty...</Text>
+  const renderFacultyItem = ({ item }) => (
+    <TouchableOpacity 
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('FacultyDetail', { teacherId: item.id })}
+    >
+      <BlurView intensity={25} tint="dark" style={styles.facultyCard}>
+        <View style={styles.facultyHeader}>
+          <View style={styles.avatarContainer}>
+            <LinearGradient
+              colors={[colors.primary, colors.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatarGradient}
+            >
+              <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+            </LinearGradient>
+          </View>
+          <View style={styles.facultyInfo}>
+            <Text style={styles.facultyName}>{item.name}</Text>
+            <View style={styles.designationBadge}>
+               <Text style={styles.facultyDesignation}>{item.designation}</Text>
+            </View>
+          </View>
+          <View style={styles.chevronBox}>
+             <Ionicons name="chevron-forward" size={rs(16)} color={colors.text.muted} />
+          </View>
         </View>
-      </SafeAreaView>
-    );
-  }
 
-  if (error) {
-    return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.errorContainer}>
-          <Ionicons name="warning" size={64} color={colors.error} style={{marginBottom: spacing.lg}} />
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
+        <View style={styles.metaRow}>
+          <View style={styles.metaInfo}>
+            <MaterialIcons name="business" size={rs(14)} color={colors.primaryLight} />
+            <Text style={styles.metaText}>{item.department}</Text>
+          </View>
+          {item.email && (
+            <View style={styles.metaInfo}>
+               <Ionicons name="mail" size={rs(14)} color={colors.primaryLight} />
+               <Text style={styles.metaText} numberOfLines={1}>{item.email.toLowerCase()}</Text>
+            </View>
+          )}
         </View>
-      </SafeAreaView>
-    );
-  }
+
+        {item.subjects && item.subjects.length > 0 && (
+          <View style={styles.tagGrid}>
+            {item.subjects.slice(0, 2).map((sub, idx) => (
+              <View key={idx} style={styles.tag}>
+                <Text style={styles.tagText}>{sub.name}</Text>
+              </View>
+            ))}
+            {item.subjects.length > 2 && (
+              <View style={[styles.tag, styles.moreTag]}>
+                <Text style={styles.tagText}>+{item.subjects.length - 2} Specialties</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </BlurView>
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <View style={styles.container}>
-        <BackButton 
-          onPress={() => navigation.goBack()} 
-          title="Back to Home"
-        />
-        
-        <View style={styles.header}>
-          <Text style={styles.title}>Faculty</Text>
-          <Text style={styles.subtitle}>Meet our teaching staff</Text>
-        </View>
-        
-        {faculty.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="school" size={64} color={colors.text.secondary} style={{marginBottom: spacing.lg}} />
-            <Text style={styles.emptyTitle}>No Faculty Found</Text>
-            <Text style={styles.emptyMessage}>
-              Faculty information is not available at the moment.
-            </Text>
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.screenTitle}>Faculty Portal</Text>
+            <TouchableOpacity onPress={loadFaculty} style={styles.refreshBtn}>
+              <Ionicons name="refresh" size={rs(20)} color="#fff" />
+            </TouchableOpacity>
           </View>
-        ) : (
-          <FlatList
-            data={faculty}
-            keyExtractor={item => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
-            renderItem={({ item }) => (
-              <AnimatedCard 
-                style={styles.facultyCard}
-                animationType="lift"
-              >
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('FacultyDetail', { teacherId: item.id })}
-                  activeOpacity={0.8}
-                >
-                <View style={styles.facultyInfo}>
-                  <View style={styles.facultyHeader}>
-                    <View style={styles.facultyTextInfo}>
-                      <Text style={styles.facultyName}>{item.name}</Text>
-                      <Text style={styles.facultyDesignation}>{item.designation}</Text>
-                      <Text style={styles.facultyDepartment}>{item.department}</Text>
-                    </View>
-                    <View style={styles.arrowContainer}>
-                      <Text style={styles.arrow}>→</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.facultyContact}>{item.contact}</Text>
-                  {item.subjects && item.subjects.length > 0 && (
-                    <View style={styles.subjectsContainer}>
-                      <Text style={styles.subjectsTitle}>Subjects:</Text>
-                      {item.subjects.slice(0, 2).map((subject, index) => (
-                        <Text key={index} style={styles.subjectName}>
-                          • {subject.name}
-                        </Text>
-                      ))}
-                      {item.subjects.length > 2 && (
-                        <Text style={styles.moreSubjects}>
-                          +{item.subjects.length - 2} more subjects
-                        </Text>
-                      )}
-                    </View>
-                  )}
+
+          {loading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Syncing faculty directories...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.centerBox}>
+              <Ionicons name="cloud-offline" size={rs(48)} color={colors.danger} />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={globalStyles.button} onPress={loadFaculty}>
+                <Text style={globalStyles.buttonText}>Retry Connection</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={faculty}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderFacultyItem}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={() => (
+                <View style={styles.centerBox}>
+                  <Ionicons name="people-outline" size={rs(60)} color={colors.text.muted} />
+                  <Text style={styles.emptyText}>No members documented yet.</Text>
                 </View>
-                </TouchableOpacity>
-              </AnimatedCard>
-            )}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+              )}
+            />
+          )}
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
-  header: {
-    marginBottom: spacing.xl,
+  safeArea: {
+    flex: 1,
   },
-  title: {
-    ...typography.h1,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.text.secondary,
+  screenTitle: {
+    fontSize: normalize(20),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
   },
-  listContainer: {
-    paddingBottom: rs(spacing.xl),
+  refreshBtn: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(14),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  listContent: {
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
+    paddingBottom: rs(40),
   },
   facultyCard: {
-    width: '100%',
-    marginBottom: rs(spacing.md),
-    padding: rs(spacing.lg),
-  },
-  facultyInfo: {
-    gap: spacing.sm,
+    borderRadius: rs(28),
+    padding: rs(20),
+    marginBottom: rs(16),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
   },
   facultyHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: rs(18),
   },
-  facultyTextInfo: {
+  avatarContainer: {
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(20),
+    overflow: 'hidden',
+    marginRight: rs(15),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  avatarGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: normalize(24),
+    fontWeight: '900',
+    color: '#fff',
+  },
+  facultyInfo: {
     flex: 1,
   },
   facultyName: {
-    ...typography.h4,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(4),
+    letterSpacing: -0.3,
+  },
+  designationBadge: {
+    backgroundColor: 'rgba(99,102,241,0.1)',
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(2),
+    borderRadius: rs(6),
+    alignSelf: 'flex-start',
   },
   facultyDesignation: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
+    fontSize: normalize(12),
+    color: colors.primaryLight,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
-  facultyDepartment: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  arrowContainer: {
-    width: 32,
-    height: 32,
-    backgroundColor: colors.primaryLight,
-    borderRadius: 16,
-    alignItems: 'center',
+  chevronBox: {
+    width: rs(32),
+    height: rs(32),
+    borderRadius: rs(10),
+    backgroundColor: 'rgba(255,255,255,0.03)',
     justifyContent: 'center',
-    marginLeft: spacing.md,
+    alignItems: 'center',
   },
-  arrow: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
+  metaRow: {
+    flexDirection: 'row',
+    marginBottom: rs(18),
+    gap: rs(15),
   },
-  facultyContact: {
-    ...typography.body,
+  metaInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    flex: 1,
+  },
+  metaText: {
+    fontSize: normalize(12),
     color: colors.text.secondary,
-  },
-  subjectsContainer: {
-    marginTop: spacing.sm,
-  },
-  subjectsTitle: {
-    ...typography.bodySmall,
-    color: colors.text.primary,
     fontWeight: '600',
-    marginBottom: spacing.xs,
   },
-  subjectName: {
-    ...typography.bodySmall,
+  tagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(8),
+    paddingTop: rs(15),
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  tag: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingHorizontal: rs(12),
+    paddingVertical: rs(6),
+    borderRadius: rs(10),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  moreTag: {
+    backgroundColor: 'rgba(99,102,241,0.05)',
+    borderColor: 'rgba(99,102,241,0.1)',
+  },
+  tagText: {
+    fontSize: normalize(11),
     color: colors.text.secondary,
-    marginLeft: spacing.sm,
+    fontWeight: '700',
   },
-  moreSubjects: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontStyle: 'italic',
-    marginLeft: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  emptyContainer: {
+  centerBox: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
+    padding: rs(40),
   },
   loadingText: {
-    ...typography.body,
+    marginTop: rs(15),
+    fontSize: normalize(14),
     color: colors.text.secondary,
-    marginTop: spacing.md,
+    fontWeight: '800',
   },
-  errorIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  errorTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  errorText: {
+    marginVertical: rs(15),
+    fontSize: normalize(15),
+    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '800',
   },
-  errorMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
+  emptyText: {
+    marginTop: rs(15),
+    fontSize: normalize(15),
+    color: colors.text.muted,
+    fontWeight: '700',
+  }
 });
 
 export default FacultyScreen;

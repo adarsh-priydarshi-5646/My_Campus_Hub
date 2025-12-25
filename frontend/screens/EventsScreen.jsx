@@ -3,37 +3,45 @@ import {
   View,
   Text,
   FlatList,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   RefreshControl,
-  TouchableOpacity
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchEvents } from '../services/api';
-import { globalStyles, colors, typography, spacing,} from '../styles/globalStyles';
-import {normalize, rs } from '../utils/responsive';
+import { globalStyles, colors, spacing, typography } from '../styles/globalStyles';
 import BackButton from '../components/BackButton';
-import AnimatedCard from '../components/AnimatedCard';
+import AnimatedBackground from '../components/AnimatedBackground';
+import { normalize, rs } from '../utils/responsive';
 
 const EventsScreen = ({ navigation }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('All');
 
-  const loadEvents = async () => {
+  const loadEvents = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      
       setError(null);
       const res = await fetchEvents();
-      if (__DEV__) console.log('Events response:', res.data);
-      setEvents(res.data);
+      // Sort by date (descending)
+      const sortedEvents = res.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setEvents(sortedEvents);
     } catch (err) {
-      if (__DEV__) console.error('Error loading events:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load events. Please try again.');
+      setError('Failed to sync campus events');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -44,405 +52,366 @@ const EventsScreen = ({ navigation }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
   const getEventCategory = (title) => {
     const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes('tech') || lowerTitle.includes('hackathon') || lowerTitle.includes('coding')) {
-      return { icon: 'laptop', color: '#3b82f6', label: 'Technical' };
+    if (lowerTitle.includes('tech') || lowerTitle.includes('hackathon') || lowerTitle.includes('code')) {
+      return { icon: 'code-braces', color: colors.primary, label: 'Technical' };
     } else if (lowerTitle.includes('cultural') || lowerTitle.includes('fest') || lowerTitle.includes('music')) {
-      return { icon: 'musical-notes', color: '#ec4899', label: 'Cultural' };
-    } else if (lowerTitle.includes('sports') || lowerTitle.includes('tournament')) {
-      return { icon: 'football', color: '#10b981', label: 'Sports' };
-    } else if (lowerTitle.includes('workshop') || lowerTitle.includes('seminar') || lowerTitle.includes('training')) {
-      return { icon: 'school', color: '#f59e0b', label: 'Workshop' };
+      return { icon: 'music-note', color: colors.accent, label: 'Cultural' };
+    } else if (lowerTitle.includes('sports') || lowerTitle.includes('cricket') || lowerTitle.includes('football')) {
+      return { icon: 'trophy', color: colors.success, label: 'Sports' };
     }
-    return { icon: 'calendar', color: colors.primary, label: 'General' };
+    return { icon: 'calendar-star', color: colors.secondary, label: 'Special' };
   };
 
-  const isUpcoming = (dateString) => {
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    return eventDate >= today;
+  const filteredEvents = activeFilter === 'All' 
+    ? events 
+    : events.filter(e => getEventCategory(e.title).label === activeFilter);
+
+  const renderEventItem = ({ item }) => {
+    const category = getEventCategory(item.title);
+    return (
+      <TouchableOpacity activeOpacity={0.85} style={styles.eventWrapper}>
+        <BlurView intensity={25} tint="dark" style={styles.eventCard}>
+          <View style={styles.cardTop}>
+             <View style={[styles.catIcon, { backgroundColor: `${category.color}15` }]}>
+                <MaterialCommunityIcons name={category.icon} size={rs(22)} color={category.color} />
+             </View>
+             <View style={styles.dateBox}>
+                <Text style={styles.dateText}>{formatDate(item.date)}</Text>
+             </View>
+          </View>
+
+          <Text style={styles.eventTitle}>{item.title}</Text>
+          
+          <View style={styles.locRow}>
+             <View style={styles.infoBadge}>
+                <Ionicons name="location" size={rs(14)} color={colors.text.secondary} />
+                <Text style={styles.infoBadgeText}>{item.venue || 'Main Auditorium'}</Text>
+             </View>
+             <View style={styles.infoBadge}>
+                <Ionicons name="time" size={rs(14)} color={colors.text.secondary} />
+                <Text style={styles.infoBadgeText}>{item.time || '10:00 AM'}</Text>
+             </View>
+          </View>
+
+          {item.description && (
+            <Text style={styles.description} numberOfLines={2}>
+              {item.description}
+            </Text>
+          )}
+
+          <View style={styles.cardFooter}>
+             <View style={styles.organizerRow}>
+                <LinearGradient
+                  colors={[`${colors.primary}40`, `${colors.secondary}40`]}
+                  style={styles.smallAvatar}
+                >
+                   <Text style={styles.avatarTxt}>{(item.organizer || 'A')[0]}</Text>
+                </LinearGradient>
+                <Text style={styles.organizerName}>{item.organizer || 'College Admin'}</Text>
+             </View>
+             <TouchableOpacity style={styles.detailsBtn}>
+                <Text style={styles.detailsBtnText}>View Details</Text>
+             </TouchableOpacity>
+          </View>
+        </BlurView>
+      </TouchableOpacity>
+    );
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading events...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={globalStyles.errorContainer}>
-          <Ionicons name="warning" size={64} color={colors.error} style={{marginBottom: spacing.lg}} />
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <View style={styles.container}>
-        <BackButton 
-          onPress={() => navigation.goBack()} 
-          title="Back to Home"
-        />
-        
-        <View style={styles.header}>
-          <View style={styles.headerIconContainer}>
-            <MaterialIcons name="event" size={40} color={colors.primary} />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.headerTitle}>Campus Highlights</Text>
+            <TouchableOpacity onPress={() => loadEvents(true)} style={styles.refreshBtn}>
+               <Ionicons name="refresh" size={rs(20)} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.title}>Campus Events</Text>
-          <Text style={styles.subtitle}>Stay updated with upcoming activities</Text>
-          <View style={styles.divider} />
-        </View>
-        
-        {events.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="event" size={64} color={colors.text.secondary} style={{marginBottom: spacing.lg}} />
-            <Text style={styles.emptyTitle}>No Events Found</Text>
-            <Text style={styles.emptyMessage}>
-              No events are scheduled at the moment. Check back later!
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={events}
-            keyExtractor={item => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={loadEvents}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            renderItem={({ item }) => {
-              const category = getEventCategory(item.title);
-              const upcoming = isUpcoming(item.date);
-              
-              return (
-                <TouchableOpacity activeOpacity={0.9}>
-                  <LinearGradient
-                    colors={[`${category.color}08`, `${category.color}03`]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.eventCard}
+
+          <View style={styles.filterSection}>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterBar}>
+                {['All', 'Technical', 'Cultural', 'Sports', 'Special'].map((f) => (
+                  <TouchableOpacity 
+                    key={f} 
+                    activeOpacity={0.7}
+                    onPress={() => setActiveFilter(f)}
+                    style={[styles.filterChip, activeFilter === f && styles.activeChip]}
                   >
-                    <View style={styles.eventHeader}>
-                      <View style={[styles.categoryBadge, { backgroundColor: `${category.color}20` }]}>
-                        <Ionicons name={category.icon} size={16} color={category.color} />
-                        <Text style={[styles.categoryText, { color: category.color }]}>
-                          {category.label}
-                        </Text>
-                      </View>
-                      {upcoming && (
-                        <View style={styles.upcomingBadge}>
-                          <Ionicons name="time" size={12} color={colors.success} />
-                          <Text style={styles.upcomingText}>Upcoming</Text>
-                        </View>
-                      )}
-                    </View>
+                    <Text style={[styles.filterText, activeFilter === f && styles.activeFilterText]}>{f}</Text>
+                  </TouchableOpacity>
+                ))}
+             </ScrollView>
+          </View>
 
-                    <Text style={styles.eventTitle}>{item.title}</Text>
-
-                    {item.description && (
-                      <Text style={styles.eventDescription} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                    )}
-
-                    <View style={styles.eventDetails}>
-                      <View style={styles.detailItem}>
-                        <View style={styles.detailIconContainer}>
-                          <Ionicons name="calendar" size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.detailContent}>
-                          <Text style={styles.detailLabel}>Date</Text>
-                          <Text style={styles.detailValue}>{formatDate(item.date)}</Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.detailItem}>
-                        <View style={styles.detailIconContainer}>
-                          <Ionicons name="time" size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.detailContent}>
-                          <Text style={styles.detailLabel}>Time</Text>
-                          <Text style={styles.detailValue}>{item.time}</Text>
-                        </View>
-                      </View>
-
-                      {item.venue && (
-                        <View style={styles.detailItem}>
-                          <View style={styles.detailIconContainer}>
-                            <Ionicons name="location" size={18} color={colors.primary} />
-                          </View>
-                          <View style={styles.detailContent}>
-                            <Text style={styles.detailLabel}>Venue</Text>
-                            <Text style={styles.detailValue}>{item.venue}</Text>
-                          </View>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.eventFooter}>
-                      <View style={styles.organizerInfo}>
-                        <FontAwesome5 name="users" size={12} color={colors.text.secondary} />
-                        <Text style={styles.organizerText}>
-                          {item.organizer || 'College Administration'}
-                        </Text>
-                      </View>
-                      <TouchableOpacity style={styles.detailsButton}>
-                        <Text style={styles.detailsButtonText}>View Details</Text>
-                        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-                      </TouchableOpacity>
-                    </View>
-                  </LinearGradient>
+          {loading ? (
+             <View style={styles.center}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Syncing latest events...</Text>
+             </View>
+          ) : error ? (
+            <View style={styles.center}>
+                <Ionicons name="cloud-offline" size={rs(48)} color={colors.danger} />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={globalStyles.button} onPress={() => loadEvents()}>
+                    <Text style={globalStyles.buttonText}>Retry Sync</Text>
                 </TouchableOpacity>
-              );
-            }}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredEvents}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderEventItem}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                  <MaterialCommunityIcons name="calendar-blank" size={rs(64)} color={colors.text.muted} />
+                  <Text style={styles.emptyText}>No events found in this category</Text>
+                </View>
+              )}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={() => loadEvents(true)} tintColor={colors.primary} />
+              }
+            />
+          )}
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    paddingVertical: spacing.md,
+  safeArea: {
+    flex: 1,
   },
-  headerIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: colors.primaryLight,
+  center: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    paddingHorizontal: rs(20),
+  },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
+  },
+  headerTitle: {
+    fontSize: normalize(20),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
+  refreshBtn: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(14),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterSection: {
+    marginVertical: rs(15),
+  },
+  filterBar: {
+    paddingHorizontal: rs(20),
+    gap: rs(10),
+  },
+  filterChip: {
+    paddingHorizontal: rs(18),
+    paddingVertical: rs(10),
+    borderRadius: rs(14),
+    backgroundColor: colors.glass.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  activeChip: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  divider: {
-    width: 60,
-    height: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    marginTop: spacing.md,
-  },
-  listContainer: {
-    paddingBottom: rs(spacing.xl),
-  },
-  eventCard: {
-    width: '100%',
-    marginBottom: rs(spacing.lg),
-    padding: rs(spacing.lg),
-    borderRadius: normalize(20),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
   },
-  eventHeader: {
+  filterText: {
+    fontSize: normalize(13),
+    fontWeight: '800',
+    color: colors.text.secondary,
+  },
+  activeFilterText: {
+    color: '#fff',
+  },
+  listContent: {
+    paddingHorizontal: rs(20),
+    paddingBottom: rs(40),
+  },
+  eventWrapper: {
+    marginBottom: rs(16),
+  },
+  eventCard: {
+    borderRadius: rs(28),
+    padding: rs(20),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
+  },
+  cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: rs(15),
   },
-  categoryBadge: {
-    flexDirection: 'row',
+  catIcon: {
+    width: rs(48),
+    height: rs(48),
+    borderRadius: rs(14),
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  categoryText: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    fontSize: 12,
+  dateBox: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: rs(12),
+    paddingVertical: rs(6),
+    borderRadius: rs(10),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  upcomingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: `${colors.success}20`,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs / 2,
-    borderRadius: 12,
-    gap: 4,
-  },
-  upcomingText: {
-    ...typography.bodySmall,
-    color: colors.success,
-    fontWeight: '700',
-    fontSize: 11,
+  dateText: {
+    fontSize: normalize(12),
+    fontWeight: '900',
+    color: colors.primaryLight,
   },
   eventTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    fontWeight: '700',
-    fontSize: 20,
+    fontSize: normalize(19),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(10),
+    letterSpacing: -0.3,
+    flexWrap: 'wrap',
   },
-  eventDescription: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginBottom: spacing.md,
-    lineHeight: 22,
-  },
-  eventDetails: {
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  detailItem: {
+  locRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    padding: spacing.sm,
-    borderRadius: 12,
+    gap: rs(10),
+    marginBottom: rs(12),
   },
-  detailIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
+  infoBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: spacing.md,
+    gap: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(4),
+    borderRadius: rs(8),
+    flexShrink: 1,
+    maxWidth: '48%',
   },
-  detailContent: {
+  infoBadgeText: {
+    fontSize: normalize(12),
+    color: colors.text.secondary,
+    fontWeight: '600',
     flex: 1,
   },
-  detailLabel: {
-    ...typography.bodySmall,
+  description: {
+    fontSize: normalize(14),
     color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 2,
+    lineHeight: normalize(22),
+    marginBottom: rs(20),
+    fontWeight: '500',
   },
-  detailValue: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  eventFooter: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacing.md,
+    paddingTop: rs(15),
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopColor: colors.borderLight,
   },
-  organizerInfo: {
+  organizerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  organizerText: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontSize: 12,
-  },
-  detailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  detailsButtonText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  emptyContainer: {
+    gap: rs(8),
     flex: 1,
+    paddingRight: rs(10),
+  },
+  smallAvatar: {
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(10),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
+  avatarTxt: {
+    fontSize: normalize(12),
+    fontWeight: '900',
+    color: '#fff',
   },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyMessage: {
-    ...typography.body,
+  organizerName: {
+    fontSize: normalize(13),
+    fontWeight: '700',
     color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
+    flexShrink: 1,
+  },
+  detailsBtn: {
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: rs(16),
+    paddingVertical: rs(8),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  detailsBtnText: {
+    fontSize: normalize(12),
+    fontWeight: '800',
+    color: colors.text.white,
   },
   loadingText: {
-    ...typography.body,
+    marginTop: rs(15),
     color: colors.text.secondary,
-    marginTop: spacing.md,
+    fontWeight: '800',
+    fontSize: normalize(14),
   },
-  errorIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  errorTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  errorText: {
+    color: colors.danger,
+    fontWeight: '800',
+    fontSize: normalize(16),
+    marginVertical: rs(15),
     textAlign: 'center',
   },
-  errorMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
+  emptyContainer: {
+    padding: rs(60),
+    alignItems: 'center',
+    gap: rs(15),
   },
+  emptyText: {
+    color: colors.text.muted,
+    fontWeight: '700',
+    fontSize: normalize(15),
+    textAlign: 'center',
+  }
 });
 
 export default EventsScreen;

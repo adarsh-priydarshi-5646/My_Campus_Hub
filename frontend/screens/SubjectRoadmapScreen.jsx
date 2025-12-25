@@ -3,19 +3,20 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
-
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchSubjects } from '../services/api';
-import { globalStyles, colors, typography, spacing, isSmallScreen } from '../styles/globalStyles';
-import { normalize, rs } from '../utils/responsive';
+import { globalStyles, colors, spacing, typography } from '../styles/globalStyles';
 import BackButton from '../components/BackButton';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
+import AnimatedBackground from '../components/AnimatedBackground';
+import { normalize, rs } from '../utils/responsive';
 
 const SubjectRoadmapScreen = ({ route, navigation }) => {
   const { semesterId, semesterName } = route.params;
@@ -30,14 +31,16 @@ const SubjectRoadmapScreen = ({ route, navigation }) => {
       const res = await fetchSubjects(semesterId);
       setSubjects(res.data);
     } catch (err) {
-      if (__DEV__) console.error('Error loading subjects:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load subjects. Please try again.');
+      setError('Curriculum pathways unavailable');
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate semester totals
+  useEffect(() => {
+    loadSubjects();
+  }, [semesterId]);
+
   const semesterStats = subjects.reduce(
     (acc, subject) => ({
       totalLectures: acc.totalLectures + (subject.totalLectures || 0),
@@ -48,704 +51,468 @@ const SubjectRoadmapScreen = ({ route, navigation }) => {
     { totalLectures: 0, totalLabs: 0, totalCredits: 0, totalSubjects: 0 }
   );
 
-  useEffect(() => {
-    loadSubjects();
-  }, [semesterId]);
-
   if (loading) {
-    return <LoadingSpinner message="Loading subject roadmaps..." />;
+    return (
+      <View style={styles.mainContainer}>
+        <AnimatedBackground variant="gradient">
+          <SafeAreaView style={styles.centerBox}>
+             <ActivityIndicator size="large" color={colors.primary} />
+             <Text style={styles.loadingText}>Architecting Roadmap...</Text>
+          </SafeAreaView>
+        </AnimatedBackground>
+      </View>
+    );
   }
 
   if (error) {
-    return <ErrorMessage message={error} onRetry={loadSubjects} />;
-  }
-
-  if (subjects.length === 0) {
     return (
-      <SafeAreaView style={globalStyles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={styles.container}>
-          <BackButton onPress={() => navigation.goBack()} title="Back to Semesters" />
-          <View style={globalStyles.errorContainer}>
-            <Text style={styles.emptyText}>No subjects available for this semester</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <View style={styles.mainContainer}>
+        <AnimatedBackground variant="gradient">
+          <SafeAreaView style={styles.centerBox}>
+            <Ionicons name="alert-circle" size={rs(60)} color={colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={globalStyles.button} onPress={loadSubjects}>
+              <Text style={globalStyles.buttonText}>Retry Sequence</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+        </AnimatedBackground>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView
-        style={globalStyles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.container}>
-          <BackButton onPress={() => navigation.goBack()} title="Back to Semesters" />
-          
-          <View style={styles.header}>
-            <View style={styles.headerBadge}>
-              <FontAwesome5 name="graduation-cap" size={36} color={colors.primary} />
-            </View>
-            <Text style={styles.title}>{semesterName}</Text>
-            <Text style={styles.subtitle}>Subject Roadmaps & Study Guides</Text>
-            <View style={styles.divider} />
-            
-            {/* Semester Overview Stats */}
-            <View style={styles.semesterStatsContainer}>
-              <View style={styles.semesterStatCard}>
-                <Ionicons name="book" size={28} color={colors.primary} />
-                <Text style={styles.semesterStatNumber}>{semesterStats.totalLectures}</Text>
-                <Text style={styles.semesterStatLabel}>Total Lectures</Text>
-              </View>
-              <View style={styles.semesterStatCard}>
-                <MaterialIcons name="science" size={28} color={colors.success} />
-                <Text style={styles.semesterStatNumber}>{semesterStats.totalLabs}</Text>
-                <Text style={styles.semesterStatLabel}>Total Labs</Text>
-              </View>
-              <View style={styles.semesterStatCard}>
-                <MaterialIcons name="school" size={28} color={colors.warning} />
-                <Text style={styles.semesterStatNumber}>{semesterStats.totalSubjects}</Text>
-                <Text style={styles.semesterStatLabel}>Subjects</Text>
-              </View>
-              <View style={styles.semesterStatCard}>
-                <Ionicons name="star" size={28} color={colors.error} />
-                <Text style={styles.semesterStatNumber}>{semesterStats.totalCredits}</Text>
-                <Text style={styles.semesterStatLabel}>Credits</Text>
-              </View>
-            </View>
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <AnimatedBackground variant="gradient">
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.topNav}>
+            <BackButton onPress={() => navigation.goBack()} color="#fff" />
+            <Text style={styles.headerTitle}>Expert Roadmap</Text>
+            <View style={{ width: rs(44) }} />
           </View>
 
-          {subjects.map((subject, index) => (
-            <View key={subject.id} style={[globalStyles.card, styles.subjectCard]}>
-              <LinearGradient
-                colors={['rgba(99, 102, 241, 0.05)', 'rgba(99, 102, 241, 0.02)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.cardGradient}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.subjectNumberBadge}>
-                    <Text style={styles.subjectNumber}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.subjectHeaderContent}>
-                    <Text style={styles.subjectName}>{subject.name}</Text>
-                    <View style={styles.creditsContainer}>
-                      <Ionicons name="star" size={14} color={colors.primary} style={{marginRight: spacing.xs}} />
-                      <Text style={styles.credits}>{subject.credits} Credits</Text>
-                    </View>
-                  </View>
-                </View>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Header Stats */}
+            <View style={styles.heroSection}>
+                <Text style={styles.heroSubtitle}>{semesterName}</Text>
+                <Text style={styles.heroTitle}>Strategic Academic Path</Text>
                 
-                {subject.description && (
-                  <View style={styles.descriptionContainer}>
-                    <Text style={styles.description}>{subject.description}</Text>
-                  </View>
-                )}
-              
-                {(subject.teacher || subject.labTeacher) && (
-                  <View style={styles.teacherSection}>
-                    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md}}>
-                      <MaterialIcons name="groups" size={18} color={colors.primary} style={{marginRight: spacing.xs}} />
-                      <Text style={styles.sectionTitle}>Faculty</Text>
-                    </View>
-                    <View style={styles.teacherInfo}>
-                      {subject.teacher && (
-                        <View style={styles.teacherCard}>
-                          <View style={styles.teacherIconContainer}>
-                            <FontAwesome5 name="chalkboard-teacher" size={20} color={colors.primary} />
-                          </View>
-                          <View style={styles.teacherDetails}>
-                            <Text style={styles.teacherLabel}>Lecture Teacher</Text>
-                            <Text style={styles.teacherName}>{subject.teacher.name}</Text>
-                            <Text style={styles.teacherDept}>{subject.teacher.department}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {subject.labTeacher && (
-                        <View style={styles.teacherCard}>
-                          <View style={styles.teacherIconContainer}>
-                            <MaterialIcons name="science" size={24} color={colors.primary} />
-                          </View>
-                          <View style={styles.teacherDetails}>
-                            <Text style={styles.teacherLabel}>Lab Teacher</Text>
-                            <Text style={styles.teacherName}>{subject.labTeacher.name}</Text>
-                            <Text style={styles.teacherDept}>{subject.labTeacher.department}</Text>
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                )}
-
-                <View style={styles.statsSection}>
-                  <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md}}>
-                    <MaterialIcons name="analytics" size={18} color={colors.primary} style={{marginRight: spacing.xs}} />
-                    <Text style={styles.sectionTitle}>Course Statistics</Text>
-                  </View>
-                  <View style={styles.statsContainer}>
-                    <View style={styles.statCard}>
-                      <View style={styles.statIconContainer}>
-                        <Ionicons name="book" size={20} color={colors.primary} />
-                      </View>
-                      <Text style={styles.statNumber}>{subject.totalLectures || 0}</Text>
-                      <Text style={styles.statLabel}>Lectures</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                      <View style={styles.statIconContainer}>
-                        <MaterialIcons name="science" size={20} color={colors.primary} />
-                      </View>
-                      <Text style={styles.statNumber}>{subject.totalLabs || 0}</Text>
-                      <Text style={styles.statLabel}>Labs</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                      <View style={styles.statIconContainer}>
-                        <Ionicons name="star" size={20} color={colors.primary} />
-                      </View>
-                      <Text style={styles.statNumber}>{subject.credits}</Text>
+                <BlurView intensity={30} tint="dark" style={styles.statsStrip}>
+                   <View style={styles.statBox}>
+                      <Text style={styles.statValue}>{semesterStats.totalSubjects}</Text>
+                      <Text style={styles.statLabel}>Subjects</Text>
+                   </View>
+                   <View style={styles.stripDivider} />
+                   <View style={styles.statBox}>
+                      <Text style={styles.statValue}>{semesterStats.totalCredits || '24.0'}</Text>
                       <Text style={styles.statLabel}>Credits</Text>
-                    </View>
-                  </View>
-                </View>
+                   </View>
+                   <View style={styles.stripDivider} />
+                   <View style={styles.statBox}>
+                      <Text style={styles.statValue}>{semesterStats.totalLectures || '160'}</Text>
+                      <Text style={styles.statLabel}>Exp. Hours</Text>
+                   </View>
+                </BlurView>
+            </View>
 
-                {subject.prerequisites && subject.prerequisites.trim() && (
-                  <View style={styles.infoSection}>
-                    <View style={styles.infoHeader}>
-                      <MaterialIcons name="checklist" size={20} color={colors.primary} style={{marginRight: spacing.sm}} />
-                      <Text style={styles.infoTitle}>Prerequisites</Text>
-                    </View>
-                    <View style={styles.infoContent}>
-                      <Text style={styles.infoText}>{subject.prerequisites.trim()}</Text>
-                    </View>
-                  </View>
-                )}
-
-                {subject.roadmap && subject.roadmap.trim() && (
-                  <View style={styles.roadmapSection}>
-                    <LinearGradient
-                      colors={['rgba(99, 102, 241, 0.08)', 'rgba(139, 92, 246, 0.08)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.roadmapGradient}
-                    >
-                      <View style={styles.roadmapHeader}>
-                        <View style={styles.roadmapIconContainer}>
-                          <MaterialIcons name="map" size={24} color={colors.text.white} />
-                        </View>
-                        <View style={styles.roadmapHeaderText}>
-                          <Text style={styles.roadmapTitle}>Study Roadmap</Text>
-                          <Text style={styles.roadmapSubtitle}>Your Learning Path</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.roadmapContent}>
-                        {subject.roadmap.trim().split('\n').map((line, index) => {
-                          const trimmedLine = line.trim();
-                          if (!trimmedLine) return null;
-                          
-                          const cleanLine = trimmedLine.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
-                          if (!cleanLine) return null;
-                          
-                          const isNumbered = /^\d+\./.test(cleanLine);
-                          const isBullet = cleanLine.startsWith('•') || cleanLine.startsWith('-') || cleanLine.startsWith('✓');
-                          const isWeekHeader = /Week\s+\d+/i.test(cleanLine);
-                          
-                          if (isWeekHeader) {
-                            return (
-                              <View key={index} style={styles.roadmapWeekHeader}>
-                                <View style={styles.roadmapWeekIconContainer}>
-                                  <MaterialIcons name="date-range" size={20} color={colors.primary} />
-                                </View>
-                                <Text style={styles.roadmapWeekText}>{cleanLine}</Text>
-                              </View>
-                            );
-                          }
-                          
-                          return (
-                            <View key={index} style={styles.roadmapItem}>
-                              <View style={styles.roadmapBulletContainer}>
-                                {isNumbered ? (
-                                  <View style={styles.roadmapNumberBadge}>
-                                    <Text style={styles.roadmapNumber}>{cleanLine.match(/^\d+/)[0]}</Text>
-                                  </View>
-                                ) : (
-                                  <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                                )}
-                              </View>
-                              <Text style={styles.roadmapItemText}>
-                                {isNumbered ? cleanLine.replace(/^\d+\.\s*/, '') : 
-                                 isBullet ? cleanLine.replace(/^[•\-✓]\s*/, '') : 
-                                 cleanLine}
-                              </Text>
+            <View style={styles.roadmapFlow}>
+              {subjects
+                .filter(subject => !route.params.subjectId || subject.id === route.params.subjectId)
+                .map((subject, index, arr) => (
+                <View key={subject.id} style={styles.timelineWrapper}>
+                  {/* Vertical Connector Line */}
+                  {index !== arr.length - 1 && (
+                     <View style={styles.roadmapConnector} />
+                  )}
+                  
+                  <View style={styles.cardContainer}>
+                    <BlurView intensity={25} tint="dark" style={styles.roadmapCard}>
+                      <View style={styles.cardHeader}>
+                         <LinearGradient
+                            colors={['#4f46e5', '#ec4899']} 
+                            start={[0, 0]}
+                            end={[1, 1]}
+                            style={styles.indexCircle}
+                         >
+                            <Text style={styles.indexText}>{index + 1}</Text>
+                         </LinearGradient>
+                         <View style={styles.titleArea}>
+                            <Text style={styles.subjectTitle}>{subject.name}</Text>
+                            <View style={styles.badgeRow}>
+                               <View style={styles.creditBadge}>
+                                  <Text style={styles.creditBadgeTxt}>{subject.credits || 4} Credits</Text>
+                               </View>
+                               <View style={styles.deptBadge}>
+                                  <Text style={styles.deptBadgeTxt}>Core</Text>
+                               </View>
                             </View>
-                          );
-                        })}
+                         </View>
                       </View>
-                      
-                      <View style={styles.roadmapFooter}>
-                        <Ionicons name="bulb-outline" size={16} color={colors.warning} />
-                        <Text style={styles.roadmapFooterText}>
-                          Follow this roadmap for structured learning
+
+                    {subject.description && (
+                      <Text style={styles.descText}>{subject.description}</Text>
+                    )}
+
+                    {/* Faculty Preview */}
+                    {(subject.teacher || subject.labTeacher) && (
+                      <View style={styles.mentorStrip}>
+                        <View style={styles.mentorIcons}>
+                           <MaterialCommunityIcons name="account-tie-voice" size={rs(16)} color={colors.primaryLight} />
+                        </View>
+                        <Text style={styles.mentorText} numberOfLines={1}>
+                          Assigned Mentors: {subject.teacher?.name || 'Faculty'}{subject.labTeacher ? ` • ${subject.labTeacher.name}` : ''}
                         </Text>
                       </View>
-                    </LinearGradient>
-                  </View>
-                )}
-              </LinearGradient>
+                    )}
+
+                    {/* Roadmap Steps */}
+                    {subject.roadmap && (
+                      <View style={styles.roadmapSection}>
+                        <View style={styles.sectionHeader}>
+                           <View style={styles.sectionIconBox}>
+                             <FontAwesome5 name="route" size={rs(14)} color={colors.warning} />
+                           </View>
+                           <Text style={styles.sectionTitle}>Learning Milestones</Text>
+                        </View>
+                        
+                        <View style={styles.timelineContainer}>
+                          {subject.roadmap.split('\n').filter(l => l.trim()).map((step, sIdx, arr) => (
+                            <View key={sIdx} style={styles.timelineItem}>
+                              {/* Left Timeline Visual */}
+                              <View style={styles.timelineLeft}>
+                                 <View style={[styles.timelineDot, { backgroundColor: sIdx === 0 ? colors.success : colors.borderLight }]} />
+                                 {sIdx !== arr.length - 1 && (
+                                   <LinearGradient
+                                      colors={[sIdx === 0 ? colors.success : colors.borderLight, 'transparent']}
+                                      style={styles.timelineLine}
+                                   />
+                                 )}
+                              </View>
+                              
+                              {/* Right Content */}
+                              <View style={styles.timelineContent}>
+                                 <BlurView intensity={10} tint="light" style={styles.milestoneCard}>
+                                   <Text style={styles.milestoneText}>{step.replace(/^\d+\.|^[•\-✓]/, '').trim()}</Text>
+                                 </BlurView>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                  </BlurView>
+                </View>
+              </View>
+              ))}
             </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+            <View style={{ height: rs(60) }} />
+          </ScrollView>
+        </SafeAreaView>
+      </AnimatedBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    padding: spacing.lg,
+    backgroundColor: colors.background,
   },
-  scrollContent: {
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    marginBottom: spacing.xl,
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  headerBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primaryLight,
+  centerBox: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    padding: rs(40),
   },
-  title: {
-    ...typography.h1,
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-    fontWeight: '800',
-    fontSize: 28,
+  safeArea: {
+    flex: 1,
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  divider: {
-    width: 60,
-    height: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  semesterStatsContainer: {
-    width: '100%',
+  topNav: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: rs(spacing.md),
-  },
-  semesterStatCard: {
-    width: isSmallScreen ? '48%' : '23.5%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    padding: rs(spacing.md),
-    borderRadius: normalize(16),
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    marginBottom: rs(spacing.md),
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
   },
-  semesterStatNumber: {
-    ...typography.h2,
-    color: colors.primary,
-    fontWeight: '800',
-    fontSize: 24,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs / 2,
+  headerTitle: {
+    fontSize: normalize(18),
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
   },
-  semesterStatLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: '600',
+  scrollContent: {
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
+  },
+  heroSection: {
+    paddingVertical: rs(20),
+    alignItems: 'center',
+    marginBottom: rs(40),
+  },
+  heroSubtitle: {
+    fontSize: normalize(14),
+    color: colors.primaryLight,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: rs(8),
+  },
+  heroTitle: {
+    fontSize: normalize(28),
+    fontWeight: '900',
+    color: colors.text.white,
+    marginBottom: rs(25),
     textAlign: 'center',
+    letterSpacing: -1,
   },
-  subjectCard: {
-    width: '100%',
-    marginBottom: rs(spacing.xl),
-    padding: 0,
+  statsStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: rs(24),
+    paddingHorizontal: rs(25),
+    paddingVertical: rs(18),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  cardGradient: {
-    width: '100%',
-    padding: rs(spacing.lg),
+  statBox: {
+    alignItems: 'center',
+    paddingHorizontal: rs(5),
+  },
+  statValue: {
+    fontSize: normalize(20),
+    fontWeight: '900',
+    color: colors.text.white,
+  },
+  statLabel: {
+    fontSize: normalize(10),
+    color: colors.text.muted,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginTop: rs(2),
+  },
+  stripDivider: {
+    width: 1,
+    height: rs(30),
+    backgroundColor: colors.border,
+    marginHorizontal: rs(20),
+  },
+  roadmapFlow: {
+    paddingLeft: rs(10),
+    paddingRight: rs(10),
+  },
+  timelineWrapper: {
+    position: 'relative',
+    marginBottom: rs(20),
+  },
+  roadmapConnector: {
+    position: 'absolute',
+    left: rs(44), // Center of the 88px circle (approx) -> indexCircle width is 52. Left margin? 
+    // Actual: indexCircle is inside card. Card has padding 24. 
+    // Circle width 52. Center = 24 + 26 = 50.
+    // Line should be at left: 50. Top: 50. Height: 100%.
+    // wait, layout is tricky.
+    // Let's rely on the circle being consistent.
+    // Better strategy: Put line OUTSIDE card?
+    // Current structure: Wrapper -> [Line, Card].
+    // Line needs to go from Center of Circle (Row 1) to Center of Circle (Row 2).
+    // This is hard with variable height cards.
+    // Alternative: Just put a line sticking out the bottom of the Circle, extending down.
+    // Let's try: Absolute line inside wrapper.
+    left: rs(50), 
+    top: rs(40),
+    bottom: rs(-25), // Extend to next card
+    width: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    zIndex: -1,
+  },
+  cardContainer: {
+    // marginBottom removed, handled by wrapper
+  },
+  roadmapCard: {
+    borderRadius: rs(28),
+    padding: rs(24),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.glass.background,
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    alignItems: 'center',
+    marginBottom: rs(20),
   },
-  subjectNumberBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+  indexCircle: {
+    width: rs(52),
+    height: rs(52),
+    borderRadius: rs(18),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  subjectNumber: {
-    ...typography.h3,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  subjectHeaderContent: {
-    flex: 1,
-  },
-  subjectName: {
-    ...typography.h3,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 22,
-    marginBottom: spacing.sm,
-    lineHeight: 28,
-  },
-  creditsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  credits: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  descriptionContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    padding: spacing.md,
-    borderRadius: 12,
-    marginBottom: spacing.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-  },
-  description: {
-    ...typography.body,
-    color: colors.text.primary,
-    lineHeight: 24,
-    fontSize: 15,
-    textAlign: 'justify',
-  },
-  sectionTitle: {
-    ...typography.h4,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  teacherSection: {
-    marginBottom: spacing.lg,
-  },
-  teacherInfo: {
-    gap: spacing.md,
-  },
-  teacherCard: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  teacherIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  teacherDetails: {
-    flex: 1,
-  },
-  teacherLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs / 2,
-    fontWeight: '600',
-  },
-  teacherName: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '700',
-    fontSize: 16,
-    marginBottom: spacing.xs / 2,
-  },
-  teacherDept: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontSize: 13,
-  },
-  statsSection: {
-    marginBottom: spacing.lg,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: spacing.md,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  statNumber: {
-    ...typography.h2,
-    color: colors.primary,
-    fontWeight: '800',
-    fontSize: 28,
-    marginBottom: spacing.xs / 2,
-  },
-  statLabel: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  infoSection: {
-    marginBottom: spacing.md,
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  infoTitle: {
-    ...typography.h4,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  infoContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: spacing.md,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  infoText: {
-    ...typography.body,
-    color: colors.text.primary,
-    lineHeight: 24,
-    fontSize: 15,
-    textAlign: 'justify',
-  },
-  emptyText: {
-    ...typography.h3,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  roadmapSection: {
-    width: '135%',
-    marginTop: rs(spacing.md),
-    marginLeft: '-17.5%',
-    borderRadius: normalize(20),
-    overflow: 'hidden',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  roadmapGradient: {
-    width: '100%',
-    padding: rs(spacing.xl),
-  },
-  roadmapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(99, 102, 241, 0.2)',
-  },
-  roadmapIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: rs(18),
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 4,
   },
-  roadmapHeaderText: {
+  indexText: {
+    fontSize: normalize(22),
+    fontWeight: '900',
+    color: '#fff',
+  },
+  titleArea: {
     flex: 1,
   },
-  roadmapTitle: {
-    ...typography.h3,
-    color: colors.primary,
-    fontWeight: '800',
-    fontSize: 20,
-    marginBottom: spacing.xs / 2,
-  },
-  roadmapSubtitle: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600',
-    fontStyle: 'italic',
-  },
-  roadmapContent: {
-    gap: spacing.md,
-  },
-  roadmapWeekHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    padding: spacing.md,
-    borderRadius: 12,
-    marginTop: spacing.sm,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-  },
-  roadmapWeekIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.text.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  roadmapWeekText: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 16,
-    flex: 1,
-  },
-  roadmapItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: spacing.md,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.success,
-  },
-  roadmapBulletContainer: {
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  roadmapNumberBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  roadmapNumber: {
-    ...typography.bodySmall,
+  subjectTitle: {
+    fontSize: normalize(19),
+    fontWeight: '900',
     color: colors.text.white,
+    marginBottom: rs(6),
+    letterSpacing: -0.5,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  creditBadge: {
+    backgroundColor: `${colors.success}15`,
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(4),
+    borderRadius: rs(8),
+  },
+  creditBadgeTxt: {
+    fontSize: normalize(10),
+    color: colors.success,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  deptBadge: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(4),
+    borderRadius: rs(8),
+  },
+  deptBadgeTxt: {
+    fontSize: normalize(10),
+    color: colors.text.secondary,
     fontWeight: '800',
-    fontSize: 12,
+    textTransform: 'uppercase',
   },
-  roadmapItemText: {
-    ...typography.body,
-    color: colors.text.primary,
-    flex: 1,
-    lineHeight: 22,
-    fontSize: 15,
+  descText: {
+    fontSize: normalize(14),
+    color: colors.text.secondary,
+    lineHeight: normalize(22),
+    marginBottom: rs(20),
+    fontWeight: '500',
   },
-  roadmapFooter: {
+  mentorStrip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: rs(10),
+    marginBottom: rs(25),
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: rs(14),
+    paddingVertical: rs(8),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  mentorIcons: {
+    width: rs(24),
+    height: rs(24),
+    borderRadius: rs(8),
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(99, 102, 241, 0.2)',
-    gap: spacing.xs,
+    alignItems: 'center',
   },
-  roadmapFooterText: {
-    ...typography.bodySmall,
+  mentorText: {
+    fontSize: normalize(12),
     color: colors.text.secondary,
-    fontWeight: '600',
-    fontStyle: 'italic',
+    fontWeight: '700',
   },
+  roadmapSection: {
+    marginTop: rs(5),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
+    marginBottom: rs(20),
+  },
+  sectionIconBox: {
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(8),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: normalize(13),
+    fontWeight: '800',
+    color: colors.text.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timelineContainer: {
+    paddingLeft: rs(10),
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: rs(4),
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    width: rs(20),
+    marginRight: rs(15),
+  },
+  timelineDot: {
+    width: rs(12),
+    height: rs(12),
+    borderRadius: rs(6),
+    marginTop: rs(6),
+    zIndex: 10,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    marginTop: -rs(2),
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: rs(20),
+  },
+  milestoneCard: {
+    borderRadius: rs(16),
+    padding: rs(15),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  milestoneText: {
+    fontSize: normalize(14),
+    color: colors.text.secondary,
+    lineHeight: normalize(22),
+    fontWeight: '600',
+  },
+  loadingText: {
+    marginTop: rs(15),
+    color: colors.text.secondary,
+    fontWeight: '800',
+    fontSize: normalize(14),
+  },
+  errorText: {
+    fontSize: normalize(16),
+    color: colors.danger,
+    fontWeight: '900',
+    marginTop: rs(15),
+    textAlign: 'center',
+  }
 });
 
 export default SubjectRoadmapScreen;

@@ -73,9 +73,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const register = useCallback(async (name, email, password) => {
+  const register = useCallback(async (userData) => {
     try {
-      const res = await apiRegister(name, email, password);
+      const res = await apiRegister(userData);
       const { token, user: payloadUser } = res.data;
       
       // Save token globally
