@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     marginBottom: rs(35),
   },
   facilityCard: {
-    width: '48%',
+    width: '47%',
     borderRadius: rs(28),
     padding: rs(20),
     alignItems: 'center',

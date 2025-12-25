@@ -96,37 +96,38 @@ const WelcomeScreen = ({ navigation }) => {
 
             {/* Features Preview */}
             <View style={styles.featuresContainer}>
-              <BlurView intensity={20} tint="dark" style={styles.featureGlass}>
-                <View style={styles.featureItem}>
-                  <View style={[styles.iconBox, { backgroundColor: 'rgba(37, 99, 235, 0.2)' }]}>
-                    <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#60a5fa" />
-                  </View>
-                  <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Academic Hub</Text>
-                    <Text style={styles.featureDesc}>Roadmaps, Credits & Syllabus</Text>
-                  </View>
-                </View>
+               <View style={styles.featureRow}>
+                  <BlurView intensity={25} tint="dark" style={styles.featureCard}>
+                    <View style={[styles.iconCircle, { backgroundColor: 'rgba(96, 165, 250, 0.2)' }]}>
+                      <MaterialCommunityIcons name="book-open-page-variant" size={rs(24)} color="#60a5fa" />
+                    </View>
+                    <Text style={styles.cardTitle}>Academics</Text>
+                    <Text style={styles.cardDesc}>Roadmaps & Syllabus</Text>
+                  </BlurView>
 
-                <View style={styles.featureItem}>
-                  <View style={[styles.iconBox, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
-                    <Ionicons name="people" size={24} color="#a78bfa" />
-                  </View>
-                  <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Faculty Portal</Text>
-                    <Text style={styles.featureDesc}>Connect with Expert Teachers</Text>
-                  </View>
-                </View>
+                  <BlurView intensity={25} tint="dark" style={styles.featureCard}>
+                    <View style={[styles.iconCircle, { backgroundColor: 'rgba(167, 139, 250, 0.2)' }]}>
+                      <Ionicons name="people" size={rs(24)} color="#a78bfa" />
+                    </View>
+                    <Text style={styles.cardTitle}>Faculty</Text>
+                    <Text style={styles.cardDesc}>Expert Mentorship</Text>
+                  </BlurView>
+               </View>
 
-                <View style={styles.featureItem}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
-                    <MaterialIcons name="event-available" size={24} color="#34d399" />
-                  </View>
-                  <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Campus Life</Text>
-                    <Text style={styles.featureDesc}>Events, Mess & Daily Updates</Text>
-                  </View>
-                </View>
-              </BlurView>
+               <View style={styles.featureRow}>
+                   <BlurView intensity={25} tint="dark" style={[styles.featureCard, styles.fullWidthCard]}>
+                      <View style={styles.rowCenter}>
+                        <View style={[styles.iconCircle, { backgroundColor: 'rgba(52, 211, 153, 0.2)' }]}>
+                          <MaterialIcons name="event-available" size={rs(24)} color="#34d399" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.cardTitle}>Campus Lifestyle</Text>
+                          <Text style={styles.cardDesc}>Events, Mess Menu & Updates</Text>
+                        </View>
+                        <Ionicons name="arrow-forward-circle" size={rs(32)} color="rgba(255,255,255,0.2)" />
+                      </View>
+                   </BlurView>
+               </View>
             </View>
 
             {/* Bottom Section with Buttons */}
@@ -239,43 +240,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontWeight: '500',
   },
-  featuresContainer: {
-    marginBottom: 40,
+  featureRow: {
+    flexDirection: 'row',
+    gap: rs(15),
+    marginBottom: rs(15),
   },
-  featureGlass: {
-    borderRadius: 28,
-    padding: 22,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  featureCard: {
+    flex: 1,
+    padding: rs(20),
+    borderRadius: rs(24),
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'flex-start',
   },
-  featureItem: {
+  fullWidthCard: {
+    width: '100%',
+  },
+  rowCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: rs(15),
   },
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+  iconCircle: {
+    width: rs(48),
+    height: rs(48),
+    borderRadius: rs(16),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginBottom: rs(12),
   },
-  featureText: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  cardTitle: {
+    fontSize: normalize(16),
+    fontWeight: '800',
     color: colors.text.white,
-    marginBottom: 2,
+    marginBottom: rs(4),
   },
-  featureDesc: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.4)',
+  cardDesc: {
+    fontSize: normalize(13),
+    color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: '500',
+    lineHeight: normalize(18),
   },
   ctaContainer: {
     width: '100%',
